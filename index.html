@@ -292,8 +292,8 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 <!-- API KEY BANNER -->
 <div id="apiBanner" style="display:none;padding:.75rem 2rem;border-bottom:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.06)">
   <div style="max-width:1600px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free FMP API key to enable the stock data modal. Get one free at <a href="https://financialmodelingprep.com/developer/docs" target="_blank" style="color:#a8bce8;text-decoration:none">financialmodelingprep.com ↗</a> (takes 2 min, no credit card).</div>
-    <input type="text" id="apiKeyInput" placeholder="Paste your FMP API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
+    <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free Alpha Vantage API key to enable the stock data modal. Get one free at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:#a8bce8;text-decoration:none">alphavantage.co ↗</a> (takes 2 min, no credit card).</div>
+    <input type="text" id="apiKeyInput" placeholder="Paste your Alpha Vantage API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
     <button onclick="saveApiKey()" style="padding:6px 14px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;white-space:nowrap">Save Key</button>
     <button onclick="dismissBanner()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px">×</button>
   </div>
@@ -399,7 +399,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 
 <footer>
   <div class="footer-inner">
-    <p class="footer-note">Fund data from SEC EDGAR filings, fund fact sheets, and public investor letters. Live stock data via Financial Modeling Prep (FMP) — may be delayed 15 min. Portfolio compositions change quarterly. Not investment advice.</p>
+    <p class="footer-note">Fund data from SEC EDGAR filings, fund fact sheets, and public investor letters. Live stock data via Alpha Vantage (NASDAQ licensed) — end-of-day pricing, 25 req/day free tier. Portfolio compositions change quarterly. Not investment advice.</p>
     <span class="footer-stamp">FundIntel · v4.1 · March 2026</span>
   </div>
 </footer>
@@ -420,21 +420,24 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
 function signOut(){sessionStorage.removeItem('fi_auth');document.getElementById('gate').style.display='flex';document.getElementById('app').style.display='none';}
 if(sessionStorage.getItem('fi_auth')==='1'){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';}
 
-/* ═══════════════ FMP API KEY ═══════════════ */
-// ── IMPORTANT: Replace the empty string below with your FMP API key
-// ── to hardcode it, OR leave it empty and use the banner to enter it at runtime.
-// ── Get a free key at: https://financialmodelingprep.com/developer/docs
-const HARDCODED_API_KEY = "DpyBwN3kR4y5xjLcXLhxXmAwInQTSA7V";   // e.g. "abc123yourkey"
+/* ═══════════════ ALPHA VANTAGE API KEY ═══════════════ */
+// ── IMPORTANT: Replace the empty string below with your Alpha Vantage API key.
+// ── Get a free key at: https://www.alphavantage.co/support/#api-key
+const HARDCODED_API_KEY = "d7081i9r01qtb4r9r9m0d7081i9r01qtb4r9r9mg";   // e.g. "ABCDEF123456"
 
-let fmpKey = HARDCODED_API_KEY || localStorage.getItem('fmp_api_key') || "";
+let avKey = HARDCODED_API_KEY || localStorage.getItem('av_api_key') || "";
+const AV = "https://www.alphavantage.co/query";
+
+// In-session cache so reopening the same ticker costs 0 extra requests
+const avCache = {};
 
 function saveApiKey(){
   const v=document.getElementById('apiKeyInput').value.trim();
   if(!v){alert('Please paste a valid API key first.');return;}
-  fmpKey=v;
-  localStorage.setItem('fmp_api_key',v);
+  avKey=v;
+  localStorage.setItem('av_api_key',v);
   document.getElementById('apiBanner').style.display='none';
-  showToastMsg('API key saved! Stock data is now enabled.');
+  showToastMsg('API key saved. Stock data is now enabled.');
 }
 function dismissBanner(){document.getElementById('apiBanner').style.display='none';}
 
@@ -448,7 +451,7 @@ function showToastMsg(msg){
 
 function initBanner(){
   var banner=document.getElementById('apiBanner');
-  if(fmpKey){banner.style.display='none';}
+  if(avKey){banner.style.display='none';}
   else{banner.style.display='block';var inp=document.getElementById('apiKeyInput');if(inp)inp.value='';}
 }
 
@@ -459,17 +462,17 @@ let priceHistory=[];
 function openStockModal(fundId){
   const f=funds.find(x=>x.id===fundId);
   if(!f||!f.parentTicker)return;
-  if(!fmpKey){
+  if(!avKey){
     document.getElementById('apiBanner').style.display='block';
-    showToastMsg('Please enter your FMP API key first (see banner above).');
+    showToastMsg('Please enter your Alpha Vantage API key first (see banner above).');
     return;
   }
   document.getElementById('sModalName').textContent=f.parentName||f.firm;
   document.getElementById('sModalTicker').textContent=f.parentTicker+' · Parent Company';
-  document.getElementById('sModalBody').innerHTML=`<div class="smodal-loading">Fetching live data for <strong style="color:var(--accent)">${f.parentTicker}</strong>…<br><span style="font-size:11px;color:var(--dim)">Connecting to Financial Modeling Prep</span></div>`;
+  document.getElementById('sModalBody').innerHTML=`<div class="smodal-loading">Fetching live data for <strong style="color:var(--accent)">${f.parentTicker}</strong>…<br><span style="font-size:11px;color:var(--dim)">Connecting to Alpha Vantage</span></div>`;
   document.getElementById('stockModal').classList.add('open');
   document.body.style.overflow='hidden';
-  fetchFMPData(f.parentTicker, f.parentName||f.firm);
+  fetchAVData(f.parentTicker, f.parentName||f.firm);
 }
 
 function closeStockModal(){
@@ -480,79 +483,122 @@ function closeStockModal(){
 document.getElementById('stockModal').addEventListener('click',e=>{if(e.target===document.getElementById('stockModal'))closeStockModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStockModal();});
 
-const FMP="https://financialmodelingprep.com/api";
+async function avFetch(params){
+  const url=AV+'?'+new URLSearchParams({...params,apikey:avKey});
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('API responded '+res.status+'. Check your API key.');
+  const data=await res.json();
+  if(data['Error Message']) throw new Error(data['Error Message']);
+  if(data['Information']) throw new Error('Rate limit reached. Alpha Vantage free tier allows 25 requests/day. Please try again tomorrow.');
+  return data;
+}
 
-async function fetchFMPData(ticker,name){
+async function fetchAVData(ticker, name){
   try{
-    const [quoteRes, histRes, incRes, profRes] = await Promise.all([
-      fetch(`${FMP}/v3/quote/${ticker}?apikey=${fmpKey}`),
-      fetch(`${FMP}/v3/historical-price-full/${ticker}?from=${dateYearsAgo(3)}&to=${today()}&apikey=${fmpKey}`),
-      fetch(`${FMP}/v3/income-statement/${ticker}?period=quarter&limit=8&apikey=${fmpKey}`),
-      fetch(`${FMP}/v3/profile/${ticker}?apikey=${fmpKey}`)
-    ]);
+    // Use cache to avoid burning daily requests on repeated opens
+    if(avCache[ticker]){
+      const c=avCache[ticker];
+      priceHistory=c.priceHistory;
+      renderStockModal(c.overview, c.quote, c.priceHistory, c.income, ticker);
+      return;
+    }
 
-    if(!quoteRes.ok) throw new Error(`API responded ${quoteRes.status}. Check your API key.`);
+    // Sequential fetches — AV free tier allows 5 req/min so we space them
+    const overview = await avFetch({function:'OVERVIEW', symbol:ticker});
+    await delay(300);
+    const quoteData = await avFetch({function:'GLOBAL_QUOTE', symbol:ticker});
+    await delay(300);
+    const dailyData = await avFetch({function:'TIME_SERIES_DAILY', symbol:ticker, outputsize:'full'});
+    await delay(300);
+    const incomeData = await avFetch({function:'INCOME_STATEMENT', symbol:ticker});
 
-    const [quoteData, histData, incData, profData] = await Promise.all([
-      quoteRes.json(), histRes.json(), incRes.json(), profRes.json()
-    ]);
+    const quote = quoteData['Global Quote']||{};
+    const timeSeries = dailyData['Time Series (Daily)']||{};
 
-    // Check for FMP error messages
-    if(quoteData['Error Message']||quoteData.error) throw new Error(quoteData['Error Message']||quoteData.error||'Invalid API key or ticker.');
+    // Convert daily time series to sorted array
+    const history = Object.entries(timeSeries)
+      .map(([date,v])=>({date, close:parseFloat(v['4. close'])}))
+      .sort((a,b)=>a.date.localeCompare(b.date));
 
-    const quote = Array.isArray(quoteData) ? quoteData[0] : quoteData;
-    const profile = Array.isArray(profData) ? profData[0] : profData;
-    const history = histData?.historical || [];
-    const income = Array.isArray(incData) ? incData : [];
+    // Quarterly income — AV returns annualReports and quarterlyReports
+    const income = (incomeData.quarterlyReports||[]).slice(0,8);
 
-    priceHistory = history.map(d=>({date:d.date, close:d.close})).reverse();
+    priceHistory = history;
 
-    renderStockModal(quote, profile, priceHistory, income, ticker);
+    // Cache result
+    avCache[ticker]={overview, quote, priceHistory:history, income};
+
+    renderStockModal(overview, quote, history, income, ticker);
 
   } catch(err){
     document.getElementById('sModalBody').innerHTML=`
       <div class="smodal-error">
         <div style="font-size:28px;color:var(--dim);margin-bottom:.75rem">⚠</div>
         <div style="font-size:14px;color:var(--text);margin-bottom:.5rem">Could not load market data</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">${err.message}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem;max-width:420px;margin-left:auto;margin-right:auto;line-height:1.7">${err.message}</div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
           <button onclick="document.getElementById('apiBanner').style.display='block';closeStockModal();" style="padding:8px 16px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;cursor:pointer">Update API Key</button>
-          <a href="https://financialmodelingprep.com/developer/docs" target="_blank" style="padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;text-decoration:none;display:inline-flex;align-items:center">Get Free Key ↗</a>
+          <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;text-decoration:none;display:inline-flex;align-items:center">Get Free Key ↗</a>
         </div>
-        <div style="margin-top:1.25rem;font-size:11px;color:var(--dim);line-height:1.7">Free FMP keys support 250 requests/day and cover all tickers in this app.<br>Registration takes about 2 minutes at financialmodelingprep.com.</div>
+        <div style="margin-top:1.25rem;font-size:11px;color:var(--dim);line-height:1.7">Alpha Vantage free keys allow 25 requests/day and 5/minute.<br>Registration is free at alphavantage.co — no credit card required.</div>
       </div>`;
   }
 }
 
-function today(){return new Date().toISOString().split('T')[0];}
-function dateYearsAgo(y){const d=new Date();d.setFullYear(d.getFullYear()-y);return d.toISOString().split('T')[0];}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function fmtB(v){if(!v||isNaN(v))return'—';const a=Math.abs(v);if(a>=1e12)return(v/1e12).toFixed(2)+'T';if(a>=1e9)return(v/1e9).toFixed(1)+'B';if(a>=1e6)return(v/1e6).toFixed(0)+'M';return v.toLocaleString();}
-function fmtDollar(v){return(v!=null&&!isNaN(v))?'$'+fmtB(v):'—';}
-function fmtPct(v){return(v!=null&&!isNaN(v))?v.toFixed(2)+'%':'—';}
-function fmtNum(v,d=2){return(v!=null&&!isNaN(v))?Number(v).toFixed(d):'—';}
+function fmtB(v){if(!v||isNaN(v))return'—';const a=Math.abs(v);if(a>=1e12)return(v/1e12).toFixed(2)+'T';if(a>=1e9)return(v/1e9).toFixed(1)+'B';if(a>=1e6)return(v/1e6).toFixed(0)+'M';return Number(v).toLocaleString();}
+function fmtDollar(v){return(v!=null&&!isNaN(v)&&v!==''&&v!=='None')?'$'+fmtB(Number(v)):'—';}
+function fmtNum(v,d=2){return(v!=null&&!isNaN(v)&&v!==''&&v!=='None')?Number(v).toFixed(d):'—';}
 
-function renderStockModal(q, p, history, income, ticker){
-  const chg=q.change||0; const chgPct=q.changesPercentage||0;
-  const chgSign=chg>=0?'+':'';
-  const chgClass=chg>0?'pos':chg<0?'neg':'';
+function renderStockModal(ov, q, history, income, ticker){
+  // AV GLOBAL_QUOTE fields
+  const price   = parseFloat(q['05. price'])||0;
+  const chg     = parseFloat(q['09. change'])||0;
+  const chgPct  = parseFloat((q['10. change percent']||'0').replace('%',''))||0;
+  const open    = parseFloat(q['02. open'])||0;
+  const hi      = parseFloat(q['03. high'])||0;
+  const lo      = parseFloat(q['04. low'])||0;
+  const prevCls = parseFloat(q['08. previous close'])||0;
+  const vol     = parseInt(q['06. volume'])||0;
 
-  // Quarterly table
+  // AV OVERVIEW fields
+  const mktCap   = ov.MarketCapitalization;
+  const entVal   = ov.EVToRevenue;   // EV/Revenue ratio (AV doesn't provide raw EV on free)
+  const pe       = ov.PERatio;
+  const fwdPE    = ov.ForwardPE;
+  const eps      = ov.EPS;
+  const hi52     = ov['52WeekHigh'];
+  const lo52     = ov['52WeekLow'];
+  const divYield = ov.DividendYield;
+  const beta     = ov.Beta;
+  const sector   = ov.Sector||'—';
+  const industry = ov.Industry||'';
+  const shares   = ov.SharesOutstanding;
+  const revTTM   = ov.RevenueTTM;
+  const ebitda   = ov.EBITDA;
+  const netInc   = ov.NetIncomeTTM||ov.ProfitMargin;
+  const exch     = ov.Exchange||'—';
+
+  const chgSign  = chg>=0?'+':'';
+  const chgClass = chg>0?'pos':chg<0?'neg':'';
+
+  // Quarterly income table
   let qHTML='';
   if(income.length>0){
     qHTML=`
     <div class="chart-section">
       <div class="chart-section-title">Quarterly Financials — Last 8 Quarters</div>
       <div class="qtable-wrap"><table class="qtable">
-        <thead><tr><th>Quarter</th><th>Revenue</th><th>Gross Profit</th><th>EBITDA</th><th>Net Income</th></tr></thead>
-        <tbody>${income.slice(0,8).reverse().map(q=>{
-          const ni=q.netIncome;
+        <thead><tr><th>Quarter End</th><th>Revenue</th><th>Gross Profit</th><th>EBITDA</th><th>Net Income</th></tr></thead>
+        <tbody>${[...income].reverse().map(r=>{
+          const ni=parseFloat(r.netIncome);
           return`<tr>
-            <td>${q.period||''} ${q.calendarYear||''}</td>
-            <td>${fmtDollar(q.revenue)}</td>
-            <td>${fmtDollar(q.grossProfit)}</td>
-            <td>${fmtDollar(q.ebitda)}</td>
-            <td class="${ni>0?'v-pos':ni<0?'v-neg':''}">${fmtDollar(ni)}</td>
+            <td>${r.fiscalDateEnding||''}</td>
+            <td>${fmtDollar(r.totalRevenue)}</td>
+            <td>${fmtDollar(r.grossProfit)}</td>
+            <td>${fmtDollar(r.ebitda)}</td>
+            <td class="${ni>0?'v-pos':ni<0?'v-neg':''}">${fmtDollar(r.netIncome)}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>
@@ -561,18 +607,18 @@ function renderStockModal(q, p, history, income, ticker){
 
   document.getElementById('sModalBody').innerHTML=`
     <div class="kstats">
-      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val acc">$${fmtNum(q.price,2)}</div><div class="kstat-sub ${chgClass}">${chgSign}$${fmtNum(Math.abs(chg),2)} (${chgSign}${fmtNum(Math.abs(chgPct),2)}%) today</div></div>
-      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmtDollar(q.marketCap)}</div><div class="kstat-sub">${q.sharesOutstanding?fmtB(q.sharesOutstanding)+' shares':''}</div></div>
-      <div class="kstat"><div class="kstat-label">Enterprise Value</div><div class="kstat-val">${p.dcfDiff!=null?fmtDollar(p.mktCap):'—'}</div><div class="kstat-sub">via FMP profile</div></div>
-      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.yearLow,2)} – $${fmtNum(q.yearHigh,2)}</div><div class="kstat-sub">${q.currency||'USD'}</div></div>
-      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${fmtNum(q.pe,1)}</div><div class="kstat-sub">Trailing TTM</div></div>
-      <div class="kstat"><div class="kstat-label">EPS (TTM)</div><div class="kstat-val">${q.eps?'$'+fmtNum(q.eps,2):'—'}</div><div class="kstat-sub">Earnings / share</div></div>
-      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmtDollar(p.revenue||q.revenuePerShare)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">Avg Volume</div><div class="kstat-val">${q.avgVolume?fmtB(q.avgVolume):'—'}</div><div class="kstat-sub">10-day avg</div></div>
-      <div class="kstat"><div class="kstat-label">Open / Prev Close</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.open,2)}</div><div class="kstat-sub">Prev: $${fmtNum(q.previousClose,2)}</div></div>
-      <div class="kstat"><div class="kstat-label">Day Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.dayLow,2)} – $${fmtNum(q.dayHigh,2)}</div><div class="kstat-sub">Today's trading range</div></div>
-      <div class="kstat"><div class="kstat-label">Exchange</div><div class="kstat-val" style="font-size:14px">${q.exchange||p.exchangeShortName||'—'}</div><div class="kstat-sub">${p.country||''}</div></div>
-      <div class="kstat"><div class="kstat-label">Sector</div><div class="kstat-val" style="font-size:12px">${p.sector||'—'}</div><div class="kstat-sub">${p.industry||''}</div></div>
+      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val acc">$${fmtNum(price,2)}</div><div class="kstat-sub ${chgClass}">${chgSign}$${fmtNum(Math.abs(chg),2)} (${chgSign}${fmtNum(Math.abs(chgPct),2)}%) today</div></div>
+      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmtDollar(mktCap)}</div><div class="kstat-sub">${shares&&shares!='None'?fmtB(Number(shares))+' shares':''}</div></div>
+      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmtDollar(revTTM)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">EBITDA (TTM)</div><div class="kstat-val">${fmtDollar(ebitda)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo52,2)} – $${fmtNum(hi52,2)}</div><div class="kstat-sub">USD</div></div>
+      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${pe&&pe!='None'?fmtNum(pe,1):'—'}</div><div class="kstat-sub">Trailing TTM</div></div>
+      <div class="kstat"><div class="kstat-label">Forward P/E</div><div class="kstat-val">${fwdPE&&fwdPE!='None'?fmtNum(fwdPE,1):'—'}</div><div class="kstat-sub">Forward est.</div></div>
+      <div class="kstat"><div class="kstat-label">EPS (TTM)</div><div class="kstat-val">${eps&&eps!='None'?'$'+fmtNum(eps,2):'—'}</div><div class="kstat-sub">Earnings / share</div></div>
+      <div class="kstat"><div class="kstat-label">Div. Yield</div><div class="kstat-val">${divYield&&divYield!='None'?(parseFloat(divYield)*100).toFixed(2)+'%':'—'}</div><div class="kstat-sub">Annual</div></div>
+      <div class="kstat"><div class="kstat-label">Beta (5yr)</div><div class="kstat-val">${beta&&beta!='None'?fmtNum(beta,2):'—'}</div><div class="kstat-sub">vs S&P 500</div></div>
+      <div class="kstat"><div class="kstat-label">Exchange</div><div class="kstat-val" style="font-size:14px">${exch}</div><div class="kstat-sub">${sector}</div></div>
+      <div class="kstat"><div class="kstat-label">Day Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo,2)} – $${fmtNum(hi,2)}</div><div class="kstat-sub">Open: $${fmtNum(open,2)}</div></div>
     </div>
 
     <div class="chart-section">
@@ -590,7 +636,7 @@ function renderStockModal(q, p, history, income, ticker){
     ${qHTML}
 
     <div class="smodal-disclaimer">
-      Data provided by <a href="https://financialmodelingprep.com" target="_blank" style="color:#a8bce8;text-decoration:none">Financial Modeling Prep</a>. Prices may be delayed up to 15 minutes. Financial figures in USD unless stated. Not investment advice.
+      Data provided by <a href="https://www.alphavantage.co" target="_blank" style="color:#a8bce8;text-decoration:none">Alpha Vantage</a> (NASDAQ licensed provider). End-of-day prices. Free tier: 25 requests/day — results are cached per session to conserve quota. Not investment advice.
       <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#a8bce8;margin-left:8px;text-decoration:none">View on Yahoo Finance ↗</a>
     </div>`;
 
@@ -633,6 +679,7 @@ function drawStockChart(history, years){
     }
   });
 }
+
 
 /* ═══════════════ FUNDS DATA ═══════════════ */
 const funds=[
