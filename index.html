@@ -6,11 +6,11 @@
 <title>FundIntel — Private Markets Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e29;--surface3:#222736;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#e8eaf0;--muted:#9aa0b0;--dim:#4a5060;--accent:#c8a96e;--accent3:#8b9fd4;--danger:#e07070;--warn:#c8a96e;--success:#7eb8a4;--pe:#8b9fd4;--pc:#7eb8a4;--r:6px;--rl:10px}
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e29;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#e8eaf0;--muted:#9aa0b0;--dim:#4a5060;--accent:#c8a96e;--accent3:#8b9fd4;--danger:#e07070;--warn:#c8a96e;--success:#7eb8a4;--pe:#8b9fd4;--pc:#7eb8a4;--r:6px;--rl:10px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
 
-/* ── GATE ── */
+/* GATE */
 #gate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
 .gate-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
 .gate-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);margin-bottom:4px}
@@ -24,53 +24,62 @@ body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--t
 .gate-note{font-size:11px;color:var(--dim);margin-top:1.5rem;line-height:1.6}
 #app{display:none}
 
-/* ── STOCK MODAL ── */
-#stockModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8000;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+/* API KEY BANNER */
+#apiBanner{background:rgba(200,169,110,0.08);border:1px solid rgba(200,169,110,0.25);border-radius:var(--r);padding:10px 16px;margin:1rem 2rem 0;max-width:1600px;margin-left:auto;margin-right:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#apiBanner.hidden{display:none}
+.api-banner-text{font-size:12px;color:var(--muted);flex:1}
+.api-banner-text strong{color:var(--accent)}
+.api-key-input{padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;outline:none;width:220px;transition:border-color .2s}
+.api-key-input:focus{border-color:var(--accent)}
+.api-key-input::placeholder{color:var(--dim)}
+.api-save-btn{padding:6px 14px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.api-dismiss{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px}
+.api-dismiss:hover{color:var(--muted)}
+
+/* STOCK MODAL */
+#stockModal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:8000;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
 #stockModal.open{display:flex}
-.smodal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:900px;padding:0;overflow:hidden;position:relative;margin:auto}
+.smodal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:920px;overflow:hidden;position:relative;margin:auto}
 .smodal-header{padding:1.5rem 2rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
-.smodal-company{display:flex;flex-direction:column;gap:3px}
 .smodal-name{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);font-weight:400}
-.smodal-ticker{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:1px}
-.smodal-close{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-size:18px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;line-height:1}
+.smodal-ticker{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:1px;margin-top:3px}
+.smodal-close{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-size:18px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .smodal-close:hover{color:var(--text);border-color:var(--dim)}
 .smodal-body{padding:1.5rem 2rem 2rem;display:flex;flex-direction:column;gap:1.5rem}
-.smodal-loading{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
-.smodal-error{text-align:center;padding:2rem;color:var(--danger);font-size:13px;line-height:1.7}
+.smodal-loading{text-align:center;padding:3rem;color:var(--muted);font-size:13px;line-height:2}
+.smodal-error{text-align:center;padding:2rem;line-height:1.8}
 
-/* key stats row */
+/* key stats */
 .kstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .kstat{background:var(--surface2);border-radius:var(--r);padding:12px 14px;border:1px solid var(--border)}
 .kstat-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
-.kstat-val{font-size:17px;font-weight:600;color:var(--text)}
-.kstat-val.pos{color:var(--success)}
-.kstat-val.neg{color:var(--danger)}
+.kstat-val{font-size:16px;font-weight:600;color:var(--text)}
+.kstat-val.pos{color:var(--success)}.kstat-val.neg{color:var(--danger)}.kstat-val.acc{color:var(--accent)}
 .kstat-sub{font-size:11px;color:var(--muted);margin-top:2px}
 
-/* chart area */
+/* chart */
 .chart-section{display:flex;flex-direction:column;gap:.75rem}
 .chart-section-title{font-size:13px;font-weight:600;color:var(--text)}
-.chart-period-btns{display:flex;gap:6px;flex-wrap:wrap}
+.period-btns{display:flex;gap:6px}
 .period-btn{padding:4px 10px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s}
 .period-btn:hover{color:var(--text);border-color:var(--dim)}
 .period-btn.active{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
-.chart-canvas-wrap{position:relative;height:220px;background:var(--surface2);border-radius:var(--r);padding:1rem;border:1px solid var(--border)}
+.chart-canvas-wrap{position:relative;height:220px;background:var(--surface2);border-radius:var(--r);padding:.75rem;border:1px solid var(--border)}
 #stockChart{width:100%!important;height:100%!important}
 
 /* quarterly table */
 .qtable-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r)}
-table.qtable{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
-table.qtable th{padding:8px 12px;text-align:right;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+table.qtable{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
+table.qtable th{padding:8px 12px;text-align:right;font-size:10px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
 table.qtable th:first-child{text-align:left}
-table.qtable td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);text-align:right;white-space:nowrap}
+table.qtable td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);text-align:right;white-space:nowrap;font-size:12px}
 table.qtable td:first-child{text-align:left;color:var(--muted);font-size:11px}
 table.qtable tr:last-child td{border-bottom:none}
 table.qtable tr:hover td{background:var(--surface2)}
-.val-pos{color:var(--success)}
-.val-neg{color:var(--danger)}
-.smodal-disclaimer{font-size:11px;color:var(--dim);line-height:1.6;border-top:1px solid var(--border);padding-top:1rem}
+.v-pos{color:var(--success)}.v-neg{color:var(--danger)}
+.smodal-disclaimer{font-size:11px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:1rem}
 
-/* ── HEADER ── */
+/* HEADER */
 header{border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:0;background:rgba(13,15,20,0.96);backdrop-filter:blur(12px);z-index:100}
 .header-inner{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:58px;gap:2rem}
 .logo{display:flex;align-items:baseline;gap:10px}
@@ -81,14 +90,14 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:
 .signout-btn{font-size:11px;color:var(--dim);background:none;border:1px solid var(--border2);border-radius:var(--r);padding:4px 10px;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s}
 .signout-btn:hover{color:var(--text);border-color:var(--dim)}
 
-/* ── TABS ── */
+/* TABS */
 .tab-bar{border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;overflow-x:auto}
 .tab-inner{max-width:1600px;margin:0 auto;display:flex;white-space:nowrap}
-.tab-btn{padding:13px 18px;font-size:13px;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.tab-btn{padding:13px 18px;font-size:13px;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 
-/* ── HERO ── */
+/* HERO */
 .hero{background:linear-gradient(135deg,#13161e 0%,#151a26 100%);border-bottom:1px solid var(--border);padding:2rem}
 .hero-inner{max-width:1600px;margin:0 auto}
 .hero h1{font-family:'DM Serif Display',serif;font-size:clamp(22px,3.5vw,40px);font-weight:400;color:var(--text);letter-spacing:-.5px;line-height:1.15;margin-bottom:.4rem}
@@ -98,7 +107,7 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:
 .stat-num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--accent);line-height:1;display:block}
 .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;display:block}
 
-/* ── CONTROLS ── */
+/* CONTROLS */
 .controls-bar{padding:.75rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:58px;z-index:90}
 .controls-inner{max-width:1600px;margin:0 auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .search-wrap{position:relative;flex:1;min-width:160px;max-width:300px}
@@ -112,17 +121,17 @@ input[type=text]::placeholder{color:var(--muted)}
 .vdiv{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0}
 .count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap}
 
-/* ── LEGEND BAR ── */
+/* LEGEND BAR */
 .legend-bar{padding:.5rem 2rem;border-bottom:1px solid var(--border);background:var(--bg)}
 .legend-inner{max-width:1600px;margin:0 auto;display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
 .legend-label{font-size:11px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
 .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
-/* ── MAIN ── */
+/* MAIN */
 .main{max-width:1600px;margin:0 auto;padding:1.5rem 2rem 4rem}
 
-/* ── FUND CARDS ── */
+/* CARDS */
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(390px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
 .fund-card{background:var(--surface);padding:1.25rem 1.5rem;transition:background .15s;display:flex;flex-direction:column;gap:.7rem}
 .fund-card:hover{background:var(--surface2)}
@@ -145,12 +154,11 @@ input[type=text]::placeholder{color:var(--muted)}
 .card-meta-val a:hover{color:var(--accent);text-decoration:underline}
 .card-sectors{font-size:12px;color:var(--muted);line-height:1.65;border-left:2px solid var(--dim);padding-left:10px}
 .card-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--dim);margin-top:3px}
-/* stock link pill */
-.stock-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.25);border-radius:20px;padding:3px 9px;cursor:pointer;transition:all .15s;margin-top:2px;text-decoration:none}
-.stock-link:hover{background:rgba(200,169,110,.2);color:#e0c080}
-.stock-link-dot{width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;flex-shrink:0}
+.stock-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.25);border-radius:20px;padding:3px 9px;cursor:pointer;transition:all .15s;margin-top:3px;text-decoration:none;width:fit-content}
+.stock-pill:hover{background:rgba(200,169,110,.2)}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
 
-/* ── PERFORMANCE ── */
+/* PERFORMANCE */
 .perf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
 .perf-card{background:var(--surface);padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.8rem;transition:background .15s}
 .perf-card:hover{background:var(--surface2)}
@@ -167,10 +175,10 @@ input[type=text]::placeholder{color:var(--muted)}
 .perf-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 .perf-bar-track{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
 .perf-bar-fill{height:100%;border-radius:2px}
-.perf-note{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:.6rem}
+.perf-note{font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:.6rem;line-height:1.5}
 .perf-source{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px}
 
-/* ── COMPARE ── */
+/* COMPARE */
 .compare-section{display:flex;flex-direction:column;gap:1.5rem}
 .compare-selector{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem 1.5rem}
 .compare-chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -188,12 +196,11 @@ table.ctable td:first-child{font-weight:600;font-size:12px;white-space:nowrap;co
 .cell-good{color:var(--success)}.cell-bad{color:var(--danger)}.cell-na{color:var(--dim);font-style:italic}
 .compare-empty{text-align:center;padding:3rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--rl)}
 
-/* ── AGGREGATION ── */
+/* AGGREGATION */
 .agg-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
 @media(max-width:920px){.agg-layout{grid-template-columns:1fr}}
 .agg-controls{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem 1.5rem;margin-bottom:1.5rem}
 .agg-controls h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.85rem}
-.agg-controls-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .agg-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
 .agg-chart-title{font-size:14px;font-weight:600;color:var(--text)}
 .agg-chart-sub{font-size:12px;color:var(--muted);line-height:1.6;margin-top:3px}
@@ -221,13 +228,13 @@ canvas.donut{display:block;width:100%!important;height:auto!important}
 .agg-metric-val{font-size:18px;font-weight:600;color:var(--text)}
 .agg-metric-sub{font-size:11px;color:var(--muted);margin-top:1px}
 
-/* ── TOOLTIP ── */
-#tooltip{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;pointer-events:none;z-index:500;display:none;line-height:1.7;min-width:160px}
+/* TOOLTIP */
+#tooltip{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;pointer-events:none;z-index:500;display:none;min-width:160px;line-height:1.7}
 #tooltip .tt-name{font-weight:600;color:var(--text);margin-bottom:2px;font-size:13px}
 #tooltip .tt-pct{color:var(--accent);font-family:'DM Mono',monospace;font-weight:600}
 #tooltip .tt-amt{color:var(--text);font-family:'DM Mono',monospace;font-size:11px}
 
-/* ── MISC ── */
+/* MISC */
 .empty{text-align:center;padding:4rem 2rem;color:var(--muted)}
 .empty h3{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:var(--text);margin-bottom:.5rem}
 footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--surface)}
@@ -258,7 +265,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 <div id="stockModal">
   <div class="smodal">
     <div class="smodal-header">
-      <div class="smodal-company">
+      <div>
         <div class="smodal-name" id="sModalName">—</div>
         <div class="smodal-ticker" id="sModalTicker">—</div>
       </div>
@@ -282,6 +289,16 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
   </div>
 </header>
 
+<!-- API KEY BANNER -->
+<div id="apiBanner" style="padding:.75rem 2rem;border-bottom:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.06)">
+  <div style="max-width:1600px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free FMP API key to enable the stock data modal. Get one free at <a href="https://financialmodelingprep.com/developer/docs" target="_blank" style="color:#a8bce8;text-decoration:none">financialmodelingprep.com ↗</a> (takes 2 min, no credit card).</div>
+    <input type="text" id="apiKeyInput" placeholder="Paste your FMP API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
+    <button onclick="saveApiKey()" style="padding:6px 14px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;white-space:nowrap">Save Key</button>
+    <button onclick="dismissBanner()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px">×</button>
+  </div>
+</div>
+
 <div class="tab-bar">
   <div class="tab-inner">
     <button class="tab-btn active" onclick="showTab('funds',this)">Fund Directory</button>
@@ -294,7 +311,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 <section class="hero">
   <div class="hero-inner">
     <h1>Private Equity &amp; Credit<br><em>Fund Intelligence</em></h1>
-    <p>Coverage of 25 leading PE and Private Credit managers — access flags, fund pages, portfolio sector compositions, live performance data, fund comparisons, and aggregated sector analysis.</p>
+    <p>Coverage of 25 leading PE and Private Credit managers — access flags, portfolio compositions, performance data, live stock data, fund comparisons, and aggregated sector analysis.</p>
     <div class="stat-row" id="heroStats"></div>
   </div>
 </section>
@@ -321,7 +338,9 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
     <span class="legend-item"><span class="dot" style="background:var(--danger)"></span>Restricted — institutional / accredited only</span>
     <span style="margin-left:auto;font-size:11px;color:var(--dim)">BDC filings: <a href="https://www.sec.gov/cgi-bin/browse-edgar" target="_blank" style="color:#a8bce8;text-decoration:none">SEC EDGAR ↗</a></span>
   </div></div>
-  <div class="main"><div class="cards-grid" id="cardsGrid"></div><div class="empty" id="emptyState" style="display:none"><div style="font-size:32px;color:var(--dim);margin-bottom:.75rem">◎</div><h3>No funds match</h3><p>Try adjusting your filters.</p></div></div>
+  <div class="main"><div class="cards-grid" id="cardsGrid"></div>
+    <div class="empty" id="emptyState" style="display:none"><div style="font-size:32px;color:var(--dim);margin-bottom:.75rem">◎</div><h3>No funds match</h3><p>Try adjusting your filters.</p></div>
+  </div>
 </div>
 
 <!-- PERFORMANCE -->
@@ -329,7 +348,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
   <div class="main">
     <div style="margin-bottom:1.25rem">
       <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:.4rem">Performance &amp; Yield Data</h2>
-      <p style="color:var(--muted);font-size:13px;max-width:680px">Publicly traded BDC metrics from SEC filings. Private fund data estimated from public commentary and LP letters. Click the stock ticker button on any publicly traded parent company to view live market data.</p>
+      <p style="color:var(--muted);font-size:13px;max-width:680px">Publicly traded BDC metrics from SEC filings. Private fund data estimated from public commentary. Click any gold ticker pill to open the live stock data panel.</p>
     </div>
     <div class="perf-grid" id="perfGrid"></div>
   </div>
@@ -354,50 +373,270 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
   <div class="main">
     <div style="margin-bottom:1.25rem">
       <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:.4rem">Sector Aggregation</h2>
-      <p style="color:var(--muted);font-size:13px;max-width:760px">Aggregated sector exposure weighted by AUM across selected funds. Hover chart segments or legend rows for details. Use filter buttons to include or exclude specific funds.</p>
+      <p style="color:var(--muted);font-size:13px;max-width:760px">Aggregated sector exposure weighted by AUM. Hover segments or legend rows for details. Toggle individual funds with the buttons below.</p>
     </div>
-    <div class="agg-controls"><h3>Filter Funds Included</h3><div class="agg-controls-row" id="aggFundFilters"></div></div>
+    <div class="agg-controls"><h3>Filter Funds Included</h3><div id="aggFundFilters" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div></div>
     <div class="agg-summary-grid" id="aggSummary"></div>
     <div class="agg-layout">
       <div class="agg-chart-card">
         <div><div class="agg-chart-title">SEC-Confirmed Data Only <span class="abadge abadge-v">Verified</span></div>
-        <div class="agg-chart-sub">Derived exclusively from SEC 10-Q / 10-K filings for publicly traded BDCs: ARCC ($29.5B), OBDC ($16.5B), GBDC ($9.9B), CCAP ($2.9B). ~$62B combined fair value.</div></div>
+        <div class="agg-chart-sub">Exclusively from SEC 10-Q / 10-K filings for ARCC, OBDC, GBDC, CCAP. ~$62B combined fair value.</div></div>
         <div class="chart-wrap"><canvas class="donut" id="chart1" width="280" height="280"></canvas>
           <div class="chart-center"><div class="chart-center-val" id="c1val"></div><div class="chart-center-label">Confirmed</div></div></div>
         <div class="leg-list" id="legend1"></div>
       </div>
       <div class="agg-chart-card">
         <div><div class="agg-chart-title">Full Universe — Confirmed + Estimated <span class="abadge abadge-e">Includes Est.</span></div>
-        <div class="agg-chart-sub">Adds estimated sector allocations for all 21 additional funds based on earnings calls, LP letters, and peer benchmarks.</div></div>
+        <div class="agg-chart-sub">Adds estimated sector allocations for all 21 additional funds based on earnings commentary and peer benchmarks.</div></div>
         <div class="chart-wrap"><canvas class="donut" id="chart2" width="280" height="280"></canvas>
           <div class="chart-center"><div class="chart-center-val" id="c2val"></div><div class="chart-center-label">Total Est.</div></div></div>
         <div class="leg-list" id="legend2"></div>
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-top:1.5rem;line-height:1.7"><strong style="color:var(--text)">Methodology:</strong> Confirmed sectors use SEC-filed % × AUM at fair value (Q4 2025). Estimated sectors use publicly disclosed themes from earnings calls and industry benchmarks. Private fund AUM figures proxy deployed capital. All estimated allocations carry ±5–10% margin.</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:1.5rem;line-height:1.7"><strong style="color:var(--text)">Methodology:</strong> Confirmed sectors use SEC-filed % × AUM at fair value (Q4 2025). Estimated sectors use publicly disclosed themes from earnings calls and industry benchmarks. All estimated allocations carry ±5–10% margin.</p>
   </div>
 </div>
 
 <footer>
   <div class="footer-inner">
-    <p class="footer-note">Data from SEC EDGAR filings, fund fact sheets, annual reports, and public investor letters. Live stock data via Yahoo Finance (may be delayed 15 min). Portfolio compositions change quarterly. Not investment advice.</p>
-    <span class="footer-stamp">FundIntel · v4.0 · March 2026</span>
+    <p class="footer-note">Fund data from SEC EDGAR filings, fund fact sheets, and public investor letters. Live stock data via Financial Modeling Prep (FMP) — may be delayed 15 min. Portfolio compositions change quarterly. Not investment advice.</p>
+    <span class="footer-stamp">FundIntel · v4.1 · March 2026</span>
   </div>
 </footer>
-</div><!-- end #app -->
+</div>
 
 <div id="tooltip"><div class="tt-name" id="tt-name"></div><div class="tt-pct" id="tt-pct"></div><div class="tt-amt" id="tt-amt"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-/* ═══════════════════════ PASSWORD ═══════════════════════ */
+/* ═══════════════ PASSWORD ═══════════════ */
 const PASSWORD="fundintel2026";
-function checkPw(){const v=document.getElementById('pwInput').value;if(v===PASSWORD){sessionStorage.setItem('fi_auth','1');document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';init();}else{document.getElementById('pwErr').textContent='Incorrect password.';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();}}
+function checkPw(){
+  const v=document.getElementById('pwInput').value;
+  if(v===PASSWORD){sessionStorage.setItem('fi_auth','1');document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';init();}
+  else{document.getElementById('pwErr').textContent='Incorrect password.';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();}
+}
 document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw()});
 function signOut(){sessionStorage.removeItem('fi_auth');document.getElementById('gate').style.display='flex';document.getElementById('app').style.display='none';}
 if(sessionStorage.getItem('fi_auth')==='1'){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';}
 
-/* ═══════════════════════ FUNDS DATA ═══════════════════════ */
+/* ═══════════════ FMP API KEY ═══════════════ */
+// ── IMPORTANT: Replace the empty string below with your FMP API key
+// ── to hardcode it, OR leave it empty and use the banner to enter it at runtime.
+// ── Get a free key at: https://financialmodelingprep.com/developer/docs
+const HARDCODED_API_KEY = "DpyBwN3kR4y5xjLcXLhxXmAwInQTSA7V";   // e.g. "abc123yourkey"
+
+let fmpKey = HARDCODED_API_KEY || localStorage.getItem('fmp_api_key') || "";
+
+function saveApiKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  if(!v){alert('Please paste a valid API key first.');return;}
+  fmpKey=v;
+  localStorage.setItem('fmp_api_key',v);
+  document.getElementById('apiBanner').style.display='none';
+  showToastMsg('API key saved! Stock data is now enabled.');
+}
+function dismissBanner(){document.getElementById('apiBanner').style.display='none';}
+
+function showToastMsg(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 20px;font-size:13px;color:var(--text);z-index:9000;white-space:nowrap';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+function initBanner(){
+  if(fmpKey){document.getElementById('apiBanner').style.display='none';}
+  else{
+    const inp=document.getElementById('apiKeyInput');
+    if(inp)inp.value='';
+  }
+}
+
+/* ═══════════════ STOCK MODAL ═══════════════ */
+let stockChartInst=null;
+let priceHistory=[];
+
+function openStockModal(fundId){
+  const f=funds.find(x=>x.id===fundId);
+  if(!f||!f.parentTicker)return;
+  if(!fmpKey){
+    document.getElementById('apiBanner').style.display='block';
+    showToastMsg('Please enter your FMP API key first (see banner above).');
+    return;
+  }
+  document.getElementById('sModalName').textContent=f.parentName||f.firm;
+  document.getElementById('sModalTicker').textContent=f.parentTicker+' · Parent Company';
+  document.getElementById('sModalBody').innerHTML=`<div class="smodal-loading">Fetching live data for <strong style="color:var(--accent)">${f.parentTicker}</strong>…<br><span style="font-size:11px;color:var(--dim)">Connecting to Financial Modeling Prep</span></div>`;
+  document.getElementById('stockModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  fetchFMPData(f.parentTicker, f.parentName||f.firm);
+}
+
+function closeStockModal(){
+  document.getElementById('stockModal').classList.remove('open');
+  document.body.style.overflow='';
+  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
+}
+document.getElementById('stockModal').addEventListener('click',e=>{if(e.target===document.getElementById('stockModal'))closeStockModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStockModal();});
+
+const FMP="https://financialmodelingprep.com/api";
+
+async function fetchFMPData(ticker,name){
+  try{
+    const [quoteRes, histRes, incRes, profRes] = await Promise.all([
+      fetch(`${FMP}/v3/quote/${ticker}?apikey=${fmpKey}`),
+      fetch(`${FMP}/v3/historical-price-full/${ticker}?from=${dateYearsAgo(3)}&to=${today()}&apikey=${fmpKey}`),
+      fetch(`${FMP}/v3/income-statement/${ticker}?period=quarter&limit=8&apikey=${fmpKey}`),
+      fetch(`${FMP}/v3/profile/${ticker}?apikey=${fmpKey}`)
+    ]);
+
+    if(!quoteRes.ok) throw new Error(`API responded ${quoteRes.status}. Check your API key.`);
+
+    const [quoteData, histData, incData, profData] = await Promise.all([
+      quoteRes.json(), histRes.json(), incRes.json(), profRes.json()
+    ]);
+
+    // Check for FMP error messages
+    if(quoteData['Error Message']||quoteData.error) throw new Error(quoteData['Error Message']||quoteData.error||'Invalid API key or ticker.');
+
+    const quote = Array.isArray(quoteData) ? quoteData[0] : quoteData;
+    const profile = Array.isArray(profData) ? profData[0] : profData;
+    const history = histData?.historical || [];
+    const income = Array.isArray(incData) ? incData : [];
+
+    priceHistory = history.map(d=>({date:d.date, close:d.close})).reverse();
+
+    renderStockModal(quote, profile, priceHistory, income, ticker);
+
+  } catch(err){
+    document.getElementById('sModalBody').innerHTML=`
+      <div class="smodal-error">
+        <div style="font-size:28px;color:var(--dim);margin-bottom:.75rem">⚠</div>
+        <div style="font-size:14px;color:var(--text);margin-bottom:.5rem">Could not load market data</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">${err.message}</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button onclick="document.getElementById('apiBanner').style.display='block';closeStockModal();" style="padding:8px 16px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;cursor:pointer">Update API Key</button>
+          <a href="https://financialmodelingprep.com/developer/docs" target="_blank" style="padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;text-decoration:none;display:inline-flex;align-items:center">Get Free Key ↗</a>
+        </div>
+        <div style="margin-top:1.25rem;font-size:11px;color:var(--dim);line-height:1.7">Free FMP keys support 250 requests/day and cover all tickers in this app.<br>Registration takes about 2 minutes at financialmodelingprep.com.</div>
+      </div>`;
+  }
+}
+
+function today(){return new Date().toISOString().split('T')[0];}
+function dateYearsAgo(y){const d=new Date();d.setFullYear(d.getFullYear()-y);return d.toISOString().split('T')[0];}
+
+function fmtB(v){if(!v||isNaN(v))return'—';const a=Math.abs(v);if(a>=1e12)return(v/1e12).toFixed(2)+'T';if(a>=1e9)return(v/1e9).toFixed(1)+'B';if(a>=1e6)return(v/1e6).toFixed(0)+'M';return v.toLocaleString();}
+function fmtDollar(v){return(v!=null&&!isNaN(v))?'$'+fmtB(v):'—';}
+function fmtPct(v){return(v!=null&&!isNaN(v))?v.toFixed(2)+'%':'—';}
+function fmtNum(v,d=2){return(v!=null&&!isNaN(v))?Number(v).toFixed(d):'—';}
+
+function renderStockModal(q, p, history, income, ticker){
+  const chg=q.change||0; const chgPct=q.changesPercentage||0;
+  const chgSign=chg>=0?'+':'';
+  const chgClass=chg>0?'pos':chg<0?'neg':'';
+
+  // Quarterly table
+  let qHTML='';
+  if(income.length>0){
+    qHTML=`
+    <div class="chart-section">
+      <div class="chart-section-title">Quarterly Financials — Last 8 Quarters</div>
+      <div class="qtable-wrap"><table class="qtable">
+        <thead><tr><th>Quarter</th><th>Revenue</th><th>Gross Profit</th><th>EBITDA</th><th>Net Income</th></tr></thead>
+        <tbody>${income.slice(0,8).reverse().map(q=>{
+          const ni=q.netIncome;
+          return`<tr>
+            <td>${q.period||''} ${q.calendarYear||''}</td>
+            <td>${fmtDollar(q.revenue)}</td>
+            <td>${fmtDollar(q.grossProfit)}</td>
+            <td>${fmtDollar(q.ebitda)}</td>
+            <td class="${ni>0?'v-pos':ni<0?'v-neg':''}">${fmtDollar(ni)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  document.getElementById('sModalBody').innerHTML=`
+    <div class="kstats">
+      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val acc">$${fmtNum(q.price,2)}</div><div class="kstat-sub ${chgClass}">${chgSign}$${fmtNum(Math.abs(chg),2)} (${chgSign}${fmtNum(Math.abs(chgPct),2)}%) today</div></div>
+      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmtDollar(q.marketCap)}</div><div class="kstat-sub">${q.sharesOutstanding?fmtB(q.sharesOutstanding)+' shares':''}</div></div>
+      <div class="kstat"><div class="kstat-label">Enterprise Value</div><div class="kstat-val">${p.dcfDiff!=null?fmtDollar(p.mktCap):'—'}</div><div class="kstat-sub">via FMP profile</div></div>
+      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.yearLow,2)} – $${fmtNum(q.yearHigh,2)}</div><div class="kstat-sub">${q.currency||'USD'}</div></div>
+      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${fmtNum(q.pe,1)}</div><div class="kstat-sub">Trailing TTM</div></div>
+      <div class="kstat"><div class="kstat-label">EPS (TTM)</div><div class="kstat-val">${q.eps?'$'+fmtNum(q.eps,2):'—'}</div><div class="kstat-sub">Earnings / share</div></div>
+      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmtDollar(p.revenue||q.revenuePerShare)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">Avg Volume</div><div class="kstat-val">${q.avgVolume?fmtB(q.avgVolume):'—'}</div><div class="kstat-sub">10-day avg</div></div>
+      <div class="kstat"><div class="kstat-label">Open / Prev Close</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.open,2)}</div><div class="kstat-sub">Prev: $${fmtNum(q.previousClose,2)}</div></div>
+      <div class="kstat"><div class="kstat-label">Day Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(q.dayLow,2)} – $${fmtNum(q.dayHigh,2)}</div><div class="kstat-sub">Today's trading range</div></div>
+      <div class="kstat"><div class="kstat-label">Exchange</div><div class="kstat-val" style="font-size:14px">${q.exchange||p.exchangeShortName||'—'}</div><div class="kstat-sub">${p.country||''}</div></div>
+      <div class="kstat"><div class="kstat-label">Sector</div><div class="kstat-val" style="font-size:12px">${p.sector||'—'}</div><div class="kstat-sub">${p.industry||''}</div></div>
+    </div>
+
+    <div class="chart-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <div class="chart-section-title">Stock Price — Historical Chart</div>
+        <div class="period-btns">
+          <button class="period-btn" onclick="setPeriod(this,1)">1yr</button>
+          <button class="period-btn" onclick="setPeriod(this,2)">2yr</button>
+          <button class="period-btn active" onclick="setPeriod(this,3)">3yr</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="stockChart"></canvas></div>
+    </div>
+
+    ${qHTML}
+
+    <div class="smodal-disclaimer">
+      Data provided by <a href="https://financialmodelingprep.com" target="_blank" style="color:#a8bce8;text-decoration:none">Financial Modeling Prep</a>. Prices may be delayed up to 15 minutes. Financial figures in USD unless stated. Not investment advice.
+      <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#a8bce8;margin-left:8px;text-decoration:none">View on Yahoo Finance ↗</a>
+    </div>`;
+
+  drawStockChart(history, 3);
+}
+
+function setPeriod(btn, years){
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawStockChart(priceHistory, years);
+}
+
+function drawStockChart(history, years){
+  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
+  const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-years);
+  const filtered=history.filter(d=>new Date(d.date)>=cutoff);
+  if(!filtered.length)return;
+  const labels=filtered.map(d=>{const dt=new Date(d.date);return dt.toLocaleDateString('en-US',{month:'short',year:'2-digit'});});
+  const data=filtered.map(d=>d.close);
+  const up=data[data.length-1]>=data[0];
+  const lineColor=up?'#7eb8a4':'#e07070';
+  const ctx=document.getElementById('stockChart').getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,200);
+  grad.addColorStop(0,up?'rgba(126,184,164,0.2)':'rgba(224,112,112,0.2)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  stockChartInst=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data,borderColor:lineColor,backgroundColor:grad,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:lineColor,fill:true,tension:0.2}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'rgba(26,30,41,0.96)',titleColor:'#e8eaf0',bodyColor:'#e8eaf0',borderColor:'rgba(255,255,255,0.13)',borderWidth:1,padding:10,callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#9aa0b0',font:{size:10},maxTicksLimit:8}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#9aa0b0',font:{size:10},callback:v=>'$'+v.toFixed(0)},position:'right'}
+      }
+    }
+  });
+}
+
+/* ═══════════════ FUNDS DATA ═══════════════ */
 const funds=[
   {id:'arcc',firm:"Ares Capital (ARCC)",type:"PC",aum:"$29.5B",aum_b:29.5,access:"Public",website:"https://www.arescapitalcorp.com",fundPage:"https://www.arescapitalcorp.com/portfolio",fundLabel:"ARCC Portfolio",ticker:"ARCC",parentTicker:"ARCC",parentName:"Ares Capital Corp",
    sectors:"Software & Services 46.5%, Healthcare 9%, Business Services 8%, Industrials 5%, Consumer Products 5%, Financial Services 4%, Other 22.5%. 603 companies. $29.5B FV.",dataDate:"Dec 2025",
@@ -412,7 +651,7 @@ const funds=[
    perf:{navPS:14.97,divYield:10.4,divQtr:0.39,niiPS:0.39,totalReturnEst:"~10–12% (ann.)",leverage:"1.26x",floatPct:100,nonAccrualPct:0.8,dataSource:"SEC GBDC FY2025 10-K, Nov 2025"},
    confirmed:{"Software & Services":20.0,"Healthcare":20.0,"Financial Services":11.0,"Hotels/Leisure":5.0,"IT Services":5.0,"Consumer Products":4.0,"Automobiles":4.0,"Other":31.0}},
   {id:'ccap',firm:"Crescent Capital (CCAP)",type:"PC",aum:"~$2.9B",aum_b:2.9,access:"Public",website:"https://www.crescentcap.com",fundPage:"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=CCAP",fundLabel:"SEC EDGAR",ticker:"CCAP",parentTicker:"CCAP",parentName:"Crescent Capital BDC Inc",
-   sectors:"Software & Services 22.3%, Healthcare 11.3%, Industrials 9.1%, Pharma/Biotech 8.1%, Media 6.8%, Business Services 5.6%, Financial Services 5.4%, Other 31.4%. 167 companies.",dataDate:"Dec 2025",
+   sectors:"Software & Services 22.3%, Healthcare 11.3%, Industrials 9.1%, Pharma/Biotech 8.1%, Media 6.8%, Business Services 5.6%, Financial Services 5.4%, Other 31.4%.",dataDate:"Dec 2025",
    perf:{navPS:19.10,divYield:8.8,divQtr:0.42,niiPS:0.45,totalReturnEst:"~9–11% (ann.)",leverage:"1.20x",floatPct:98,nonAccrualPct:0.9,dataSource:"SEC Exhibit 99.1, Feb 2026"},
    confirmed:{"Software & Services":22.3,"Healthcare":11.3,"Industrials":9.1,"Pharma/Biotech":8.1,"Media & Entertainment":6.8,"Business Services":5.6,"Financial Services":5.4,"Other":31.4}},
   {id:'bcred',firm:"Blackstone Credit (BCRED)",type:"PC",aum:"$82.2B",aum_b:82.2,access:"Partial",website:"https://www.bcred.com",fundPage:"https://www.bcred.com/shareholders/",fundLabel:"BCRED Shareholders",ticker:"BCRED",parentTicker:"BX",parentName:"Blackstone Inc",
@@ -420,18 +659,18 @@ const funds=[
    perf:{navPS:null,divYield:8.1,divQtr:null,niiPS:null,totalReturnEst:"~8–10% target",leverage:"~1.0x",floatPct:95,nonAccrualPct:null,dataSource:"BCRED report Q4 2025"},
    estimated:{"Software & Services":22.0,"Business Services":15.0,"Healthcare":13.0,"Financial Services":10.0,"Industrials":8.0,"Consumer Products":7.0,"Real Assets":5.0,"Other":20.0}},
   {id:'cclfx',firm:"Cliffwater (CCLFX)",type:"PC",aum:"~$33B",aum_b:33.0,access:"Partial",website:"https://www.cliffwater.com",fundPage:"https://www.cliffwater.com/funds/cliffwater-corporate-lending-fund",fundLabel:"CCLFX Page",ticker:"CCLFX",parentTicker:null,parentName:null,
-   sectors:"Direct Lending 38.9%, Opportunistic 18.1%, Liquid Credit 14.7%, Structured 13.6%, Asset-Backed 5.9%, Real Assets 3.8%. Software/HC/Financials ~40% combined.",dataDate:"Dec 2025",
+   sectors:"Direct Lending 38.9%, Opportunistic 18.1%, Liquid Credit 14.7%, Structured 13.6%, Asset-Backed 5.9%, Real Assets 3.8%.",dataDate:"Dec 2025",
    perf:{navPS:null,divYield:9.2,divQtr:null,niiPS:null,totalReturnEst:"~9–10% target",leverage:"~0.9x",floatPct:85,nonAccrualPct:null,dataSource:"Cliffwater Q4 2025"},
    estimated:{"Software & Services":18.0,"Healthcare":12.0,"Financial Services":10.0,"Industrials":9.0,"Consumer Products":8.0,"Real Assets":6.0,"Business Services":7.0,"Other":30.0}},
   {id:'apollo_cr',firm:"Apollo Credit",type:"PC",aum:"$500B (firm)",aum_b:120.0,access:"Partial",website:"https://www.apollo.com",fundPage:"https://ir.apollo.com",fundLabel:"Apollo IR",ticker:"APO",parentTicker:"APO",parentName:"Apollo Global Management Inc",
-   sectors:"Capital Goods/Industrials 24.5%, Financial Services 24.5%, Business Services 21.7%, Consumer 15%, Energy 4.2%, Other 10.1%. 100% first lien.",dataDate:"Dec 2025",
+   sectors:"Capital Goods/Industrials 24.5%, Financial Services 24.5%, Business Services 21.7%, Consumer 15%, Energy 4.2%.",dataDate:"Dec 2025",
    perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~9–12% (est.)",leverage:"~1.1x",floatPct:90,nonAccrualPct:null,dataSource:"Apollo IR / ADS report"},
    estimated:{"Industrials":24.5,"Financial Services":24.5,"Business Services":21.7,"Consumer Products":15.0,"Energy":4.2,"Other":10.1}},
-  {id:'oaktree',firm:"Oaktree Capital",type:"PC",aum:"~$200B",aum_b:50.0,access:"Restricted",website:"https://www.oaktreecapital.com",fundPage:"https://www.oaktreecapital.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"OAK",parentName:"Oaktree Capital Group (Brookfield sub)",
-   sectors:"Opportunistic/distressed. Software/Services, Retail, Pharma, Food & Drug, Health Services ~30% combined.",dataDate:"2025 est.",
+  {id:'oaktree',firm:"Oaktree Capital",type:"PC",aum:"~$200B",aum_b:50.0,access:"Restricted",website:"https://www.oaktreecapital.com",fundPage:"https://www.oaktreecapital.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"BAM",parentName:"Brookfield Asset Mgmt (parent)",
+   sectors:"Opportunistic/distressed. Software/Services, Retail, Pharma, Health Services ~30% combined.",dataDate:"2025 est.",
    perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~10–15% gross",leverage:"Varies",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
    estimated:{"Software & Services":12.0,"Healthcare":10.0,"Consumer Products":12.0,"Financial Services":10.0,"Pharma/Biotech":8.0,"Industrials":8.0,"Real Assets":8.0,"Other":32.0}},
-  {id:'hps',firm:"HPS Investment Partners",type:"PC",aum:"$148B+",aum_b:80.0,access:"Restricted",website:"https://www.hpspartners.com",fundPage:"https://www.hpspartners.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"BLK",parentName:"BlackRock Inc (parent since 2024)",
+  {id:'hps',firm:"HPS Investment Partners",type:"PC",aum:"$148B+",aum_b:80.0,access:"Restricted",website:"https://www.hpspartners.com",fundPage:"https://www.hpspartners.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"BLK",parentName:"BlackRock Inc",
    sectors:"Senior secured direct lending. Software, healthcare, professional services dominant. Avg EBITDA ~$255M.",dataDate:"2025 est.",
    perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~9–12% (est.)",leverage:"~1.0–1.2x",floatPct:90,nonAccrualPct:null,dataSource:"Institutional LP / BlackRock IR"},
    estimated:{"Software & Services":20.0,"Healthcare":15.0,"Business Services":15.0,"Financial Services":12.0,"Industrials":10.0,"Consumer Products":8.0,"Other":20.0}},
@@ -463,7 +702,7 @@ const funds=[
    sectors:"Aerospace & Defense, Healthcare, Technology, Consumer & Retail, Energy/Real Assets.",dataDate:"2025 est.",
    perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–18% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"CG IR quarterly"},
    estimated:{"Aerospace & Defense":18.0,"Healthcare":15.0,"Technology":14.0,"Consumer Products":12.0,"Energy":12.0,"Financial Services":10.0,"Industrials":10.0,"Other":9.0}},
-  {id:'eqt',firm:"EQT",type:"PE",aum:"~$270B",aum_b:55.0,access:"Partial",website:"https://www.eqtgroup.com",fundPage:"https://www.eqtgroup.com/investors",fundLabel:"Investor Relations",ticker:"EQT SE",parentTicker:"EQTAB.ST",parentName:"EQT AB (Nasdaq Stockholm)",
+  {id:'eqt',firm:"EQT",type:"PE",aum:"~$270B",aum_b:55.0,access:"Partial",website:"https://www.eqtgroup.com",fundPage:"https://www.eqtgroup.com/investors",fundLabel:"Investor Relations",ticker:"EQT SE",parentTicker:null,parentName:null,
    sectors:"Technology/Software (largest), Healthcare, Services. EQT X flagship. Digitization, life sciences.",dataDate:"2026",
    perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~18–22% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"EQT IR quarterly"},
    estimated:{"Technology":30.0,"Healthcare":22.0,"Business Services":16.0,"Financial Services":10.0,"Consumer Products":8.0,"Industrials":8.0,"Other":6.0}},
@@ -501,254 +740,11 @@ const funds=[
    estimated:{"Healthcare":20.0,"Business Services":18.0,"Financial Services":16.0,"Technology":16.0,"Consumer Products":16.0,"Other":14.0}},
 ];
 
-/* ═══════════════════════ STOCK MODAL ═══════════════════════ */
-let stockChartInst=null;
-let currentPriceData={};
-
-function openStockModal(fundId){
-  const f=funds.find(x=>x.id===fundId);
-  if(!f||!f.parentTicker)return;
-  document.getElementById('sModalName').textContent=f.parentName||f.firm;
-  document.getElementById('sModalTicker').textContent=f.parentTicker+' · Parent Company Stock';
-  document.getElementById('sModalBody').innerHTML='<div class="smodal-loading">Fetching live market data…<br><span style="font-size:11px;color:var(--dim);margin-top:8px;display:block">Connecting to Yahoo Finance</span></div>';
-  document.getElementById('stockModal').classList.add('open');
-  document.body.style.overflow='hidden';
-  fetchStockData(f.parentTicker,f.parentName||f.firm);
-}
-
-function closeStockModal(){
-  document.getElementById('stockModal').classList.remove('open');
-  document.body.style.overflow='';
-  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
-}
-document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStockModal();});
-
-async function fetchStockData(ticker,name){
-  try{
-    // Use Yahoo Finance v8 chart endpoint via a CORS proxy
-    const now=Math.floor(Date.now()/1000);
-    const threeYrsAgo=now-(3*365*24*60*60);
-    const twoYrsAgo=now-(2*365*24*60*60);
-
-    // Fetch 3yr daily prices for chart
-    const chartUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${threeYrsAgo}&period2=${now}&interval=1wk&includePrePost=false`;
-    const quoteUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${now-86400}&period2=${now}&interval=1d&includePrePost=false`;
-
-    const [chartRes,quoteRes]=await Promise.all([
-      fetch(chartUrl,{headers:{'User-Agent':'Mozilla/5.0'}}),
-      fetch(quoteUrl,{headers:{'User-Agent':'Mozilla/5.0'}})
-    ]);
-
-    if(!chartRes.ok)throw new Error('Market data unavailable (CORS or rate limit). Try opening directly on Yahoo Finance.');
-
-    const chartJson=await chartRes.json();
-    const result=chartJson?.chart?.result?.[0];
-    if(!result)throw new Error('No data returned for ticker '+ticker);
-
-    const meta=result.meta||{};
-    const timestamps=result.timestamp||[];
-    const quotes=result.indicators?.quote?.[0]||{};
-    const closes=quotes.close||[];
-
-    // Store full price data
-    currentPriceData={timestamps,closes,ticker,name};
-
-    // Build key stats from meta
-    const price=meta.regularMarketPrice||meta.previousClose||null;
-    const prevClose=meta.chartPreviousClose||meta.previousClose||null;
-    const chg=price&&prevClose?(price-prevClose):null;
-    const chgPct=chg&&prevClose?(chg/prevClose*100):null;
-    const hi52=meta.fiftyTwoWeekHigh||null;
-    const lo52=meta.fiftyTwoWeekLow||null;
-    const mktCap=meta.marketCap||null;
-    const currency=meta.currency||'USD';
-
-    // Quarterly financials — try v10 modules
-    let qData=null;
-    try{
-      const finUrl=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=incomeStatementHistoryQuarterly,balanceSheetHistoryQuarterly,defaultKeyStatistics,financialData,summaryDetail,price`;
-      const finRes=await fetch(finUrl,{headers:{'User-Agent':'Mozilla/5.0'}});
-      if(finRes.ok){
-        const finJson=await finRes.json();
-        qData=finJson?.quoteSummary?.result?.[0]||null;
-      }
-    }catch(e){}
-
-    renderStockModal({ticker,name,price,prevClose,chg,chgPct,hi52,lo52,mktCap,currency,meta,qData,timestamps,closes});
-
-  }catch(err){
-    document.getElementById('sModalBody').innerHTML=`
-      <div class="smodal-error">
-        <div style="font-size:24px;margin-bottom:.75rem;color:var(--dim)">⚠</div>
-        <div style="color:var(--text);margin-bottom:.5rem">Could not load live market data</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">${err.message}</div>
-        <a href="https://finance.yahoo.com/quote/${document.getElementById('sModalTicker').textContent.split('·')[0].trim()}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none;border:1px solid rgba(200,169,110,.3);padding:8px 16px;border-radius:var(--r);display:inline-block">Open on Yahoo Finance ↗</a>
-        <div style="margin-top:1rem;font-size:11px;color:var(--dim)">Yahoo Finance data may be blocked by browser security policies (CORS) when accessed from a local file. This works normally when hosted on GitHub Pages.</div>
-      </div>`;
-  }
-}
-
-function fmt$(v,scale=1e9){if(!v||isNaN(v))return'—';const n=v/scale;if(scale===1e12)return '$'+(n).toFixed(2)+'T';if(scale===1e9)return '$'+(n).toFixed(1)+'B';if(scale===1e6)return '$'+(n).toFixed(0)+'M';return '$'+v.toLocaleString();}
-function fmtN(v,d=2){return(v!=null&&!isNaN(v))?v.toFixed(d):'—';}
-function fmtPct(v){return(v!=null&&!isNaN(v))?v.toFixed(2)+'%':'—';}
-function colorClass(v){return v>0?'pos':v<0?'neg':'';}
-
-function renderStockModal({ticker,name,price,prevClose,chg,chgPct,hi52,lo52,mktCap,currency,meta,qData,timestamps,closes}){
-  const ks=qData?.defaultKeyStatistics||{};
-  const fd=qData?.financialData||{};
-  const sd=qData?.summaryDetail||{};
-  const priceData=qData?.price||{};
-
-  const entVal=ks.enterpriseValue?.raw||null;
-  const trailingPE=ks.trailingPE?.raw||null;
-  const fwdPE=ks.forwardPE?.raw||null;
-  const totalRev=fd.totalRevenue?.raw||null;
-  const grossProfit=fd.grossProfits?.raw||null;
-  const ebitda=fd.ebitda?.raw||null;
-  const netIncome=ks.netIncomeToCommon?.raw||null;
-  const divYield=sd.dividendYield?.raw||null;
-  const beta=ks.beta?.raw||sd.beta?.raw||null;
-  const shares=ks.sharesOutstanding?.raw||null;
-  const mktCapReal=priceData.marketCap?.raw||mktCap||null;
-
-  const changeSign=chg>0?'+':'';
-  const priceDisplay=price?`${currency} ${price.toFixed(2)}`:'—';
-  const chgDisplay=chg!=null?`${changeSign}${chg.toFixed(2)} (${changeSign}${chgPct?.toFixed(2)}%)`:'—';
-
-  // Build quarterly income table from qData
-  const qIncome=qData?.incomeStatementHistoryQuarterly?.incomeStatementHistory||[];
-  const qBalance=qData?.balanceSheetHistoryQuarterly?.balanceSheetStatements||[];
-
-  let qTableHTML='';
-  if(qIncome.length>0){
-    const rows=qIncome.slice(0,8).reverse();
-    qTableHTML=`
-    <div class="chart-section">
-      <div class="chart-section-title">Quarterly Financials (last 8 quarters)</div>
-      <div class="qtable-wrap"><table class="qtable">
-        <thead><tr>
-          <th>Quarter</th>
-          <th>Revenue</th>
-          <th>Gross Profit</th>
-          <th>EBITDA</th>
-          <th>Net Income</th>
-        </tr></thead>
-        <tbody>${rows.map(q=>{
-          const d=new Date(q.endDate?.raw*1000);
-          const qLabel=`Q${Math.ceil((d.getMonth()+1)/3)} ${d.getFullYear()}`;
-          const rev=q.totalRevenue?.raw;
-          const gp=q.grossProfit?.raw;
-          const ni=q.netIncome?.raw;
-          const eb=q.ebitda?.raw;
-          const niClass=ni>0?'val-pos':ni<0?'val-neg':'';
-          return`<tr>
-            <td>${qLabel}</td>
-            <td>${rev?'$'+(rev/1e6).toFixed(0)+'M':'—'}</td>
-            <td>${gp?'$'+(gp/1e6).toFixed(0)+'M':'—'}</td>
-            <td>${eb?'$'+(eb/1e6).toFixed(0)+'M':'—'}</td>
-            <td class="${niClass}">${ni?'$'+(ni/1e6).toFixed(0)+'M':'—'}</td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table></div>
-    </div>`;
-  }
-
-  document.getElementById('sModalBody').innerHTML=`
-    <div class="kstats">
-      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val">${priceDisplay}</div><div class="kstat-sub ${colorClass(chg)}">${chgDisplay}</div></div>
-      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmt$(mktCapReal,mktCapReal>1e12?1e12:1e9)}</div><div class="kstat-sub">${shares?((shares/1e6).toFixed(0)+'M shares'):''}</div></div>
-      <div class="kstat"><div class="kstat-label">Enterprise Value</div><div class="kstat-val">${fmt$(entVal,entVal&&entVal>1e12?1e12:1e9)}</div><div class="kstat-sub">EV incl. debt</div></div>
-      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">${lo52?lo52.toFixed(2):'—'} – ${hi52?hi52.toFixed(2):'—'}</div><div class="kstat-sub">${currency}</div></div>
-      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${fmtN(trailingPE,1)}</div><div class="kstat-sub">Trailing TTM</div></div>
-      <div class="kstat"><div class="kstat-label">Fwd P/E</div><div class="kstat-val">${fmtN(fwdPE,1)}</div><div class="kstat-sub">Forward est.</div></div>
-      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmt$(totalRev,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">EBITDA (TTM)</div><div class="kstat-val">${fmt$(ebitda,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">Net Income (TTM)</div><div class="kstat-val ${netIncome>0?'pos':netIncome<0?'neg':''}">${fmt$(netIncome,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">Div. Yield</div><div class="kstat-val">${divYield?(divYield*100).toFixed(2)+'%':'—'}</div><div class="kstat-sub">Annual</div></div>
-      <div class="kstat"><div class="kstat-label">Beta (5yr)</div><div class="kstat-val">${fmtN(beta,2)}</div><div class="kstat-sub">vs S&P 500</div></div>
-    </div>
-
-    <div class="chart-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-        <div class="chart-section-title">Stock Price — 3 Year History</div>
-        <div class="chart-period-btns">
-          <button class="period-btn active" onclick="setChartPeriod(this,1)">1yr</button>
-          <button class="period-btn" onclick="setChartPeriod(this,2)">2yr</button>
-          <button class="period-btn active" onclick="setChartPeriod(this,3)">3yr</button>
-        </div>
-      </div>
-      <div class="chart-canvas-wrap"><canvas id="stockChart"></canvas></div>
-    </div>
-
-    ${qTableHTML}
-
-    <div class="smodal-disclaimer">
-      Data sourced from Yahoo Finance. Stock prices may be delayed up to 15 minutes. Financial figures are in ${currency} unless otherwise stated. Revenue, EBITDA, and net income are trailing twelve-month (TTM) unless noted. Enterprise value includes total debt and minority interest minus cash. Not investment advice.
-      <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#a8bce8;margin-left:8px;text-decoration:none">View full profile on Yahoo Finance ↗</a>
-    </div>`;
-
-  // Draw the stock chart
-  drawStockChart(timestamps,closes,3);
-  // Set 3yr button active
-  document.querySelectorAll('.period-btn').forEach(b=>{b.classList.toggle('active',b.textContent==='3yr');});
-}
-
-function setChartPeriod(btn,years){
-  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  drawStockChart(currentPriceData.timestamps,currentPriceData.closes,years);
-}
-
-function drawStockChart(timestamps,closes,years){
-  if(!timestamps||!closes)return;
-  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
-  const now=Date.now()/1000;
-  const cutoff=now-(years*365*24*60*60);
-  const filtered=[];
-  timestamps.forEach((t,i)=>{if(t>=cutoff&&closes[i]!=null)filtered.push({t,c:closes[i]});});
-  if(!filtered.length)return;
-  const labels=filtered.map(d=>{const dt=new Date(d.t*1000);return dt.toLocaleDateString('en-US',{month:'short',year:'2-digit'});});
-  const data=filtered.map(d=>d.c);
-  const first=data[0];const last=data[data.length-1];
-  const up=last>=first;
-  const lineColor=up?'#7eb8a4':'#e07070';
-  const ctx=document.getElementById('stockChart').getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,200);
-  grad.addColorStop(0,up?'rgba(126,184,164,0.25)':'rgba(224,112,112,0.25)');
-  grad.addColorStop(1,'rgba(0,0,0,0)');
-  stockChartInst=new Chart(ctx,{
-    type:'line',
-    data:{labels,datasets:[{data,borderColor:lineColor,backgroundColor:grad,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:lineColor,fill:true,tension:0.2}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(26,30,41,0.95)',
-          titleColor:'#e8eaf0',
-          bodyColor:'#e8eaf0',
-          borderColor:'rgba(255,255,255,0.13)',
-          borderWidth:1,
-          padding:10,
-          callbacks:{label:ctx=>`$${ctx.parsed.y.toFixed(2)}`}
-        }
-      },
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7080',font:{size:10},maxTicksLimit:8}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7080',font:{size:10},callback:v=>'$'+v.toFixed(0)},position:'right'}
-      }
-    }
-  });
-}
-
-/* ═══════════════════════ SECTOR COLORS ═══════════════════════ */
+/* ═══════════════ SECTOR COLORS ═══════════════ */
 const COLORS={"Software & Services":"#7eb8a4","Technology":"#7eb8a4","Healthcare":"#8b9fd4","Pharma/Biotech":"#a89fd4","Financial Services":"#c8a96e","Business Services":"#d4a86a","Consumer Products":"#c96e6e","Industrials":"#7a9cb0","Infrastructure":"#5a8a9e","Real Assets":"#6b9e8a","Energy":"#b0a45a","Media & Entertainment":"#b07a9e","IT Services":"#90b4c8","Hotels/Leisure":"#b4906e","Automobiles":"#8a8a6e","Aerospace & Defense":"#7a9070","Insurance":"#9aad8a","Real Estate":"#ad9a7a","Other":"#3a3f52"};
 function sc(s){return COLORS[s]||"#4a5060";}
 
-/* ═══════════════════════ AGG ═══════════════════════ */
+/* ═══════════════ AGG ═══════════════ */
 let aggSelected=new Set(funds.map(f=>f.id));
 let c1=null,c2=null;
 function buildAgg(withEst){
@@ -789,30 +785,29 @@ function drawDonut(cid,lid,vid,withEst){
     }
   });
   if(withEst)c2=inst;else c1=inst;
-  buildLegend(lid,entries,grand);
+  buildLeg(lid,entries,grand);
 }
-function buildLegend(lid,entries,grand){
-  document.getElementById(lid).innerHTML=entries.map(([s,v])=>`<div class="leg-row" onmouseenter="hlSec('${lid}','${s}')" onmouseleave="unhlSec('${lid}')">
+function buildLeg(lid,entries,grand){
+  document.getElementById(lid).innerHTML=entries.map(([s,v])=>`<div class="leg-row" onmouseenter="hlS('${lid}','${s}')" onmouseleave="unhS('${lid}')">
     <div class="leg-swatch" style="background:${sc(s)}"></div>
     <span class="leg-name">${s}</span>
     <span class="leg-pct">${(v/grand*100).toFixed(1)}%</span>
     <span class="leg-amt">$${v.toFixed(1)}B</span>
   </div>`).join('');
 }
-function hlSec(lid,s){
+function hlS(lid,s){
   const inst=lid==='legend1'?c1:c2;if(!inst)return;
   inst.getDatasetMeta(0).data.forEach((a,i)=>{a.options.offset=inst.data.labels[i]===s?14:0;});
   inst.update('none');
   document.querySelectorAll('#'+lid+' .leg-row').forEach((r,i)=>r.classList.toggle('faded',inst.data.labels[i]!==s));
 }
-function unhlSec(lid){
+function unhS(lid){
   const inst=lid==='legend1'?c1:c2;if(!inst)return;
   inst.getDatasetMeta(0).data.forEach(a=>{a.options.offset=0;});inst.update('none');
   document.querySelectorAll('#'+lid+' .leg-row').forEach(r=>r.classList.remove('faded'));
   document.getElementById('tooltip').style.display='none';
 }
 document.addEventListener('mousemove',e=>{const tt=document.getElementById('tooltip');if(tt.style.display==='block'){tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';}});
-
 function renderAggSummary(){
   const cf=funds.filter(f=>aggSelected.has(f.id)&&f.confirmed);
   const af=funds.filter(f=>aggSelected.has(f.id));
@@ -826,7 +821,7 @@ function renderAggSummary(){
 }
 function renderAggFilters(){
   document.getElementById('aggFundFilters').innerHTML=
-    `<button class="filter-btn active" onclick="aggAll()">All Funds</button>`+
+    `<button class="filter-btn active" onclick="aggAll()">All</button>`+
     `<button class="filter-btn" onclick="aggByType('PE')">PE Only</button>`+
     `<button class="filter-btn" onclick="aggByType('PC')">PC Only</button>`+
     `<div class="vdiv"></div>`+
@@ -837,14 +832,11 @@ function aggAll(){aggSelected=new Set(funds.map(f=>f.id));renderAggFilters();reb
 function aggByType(t){aggSelected=new Set(funds.filter(f=>f.type===t).map(f=>f.id));renderAggFilters();rebuildAgg();}
 function rebuildAgg(){renderAggSummary();drawDonut('chart1','legend1','c1val',false);drawDonut('chart2','legend2','c2val',true);}
 
-/* ═══════════════════════ FUND DIRECTORY ═══════════════════════ */
+/* ═══════════════ FUND DIRECTORY ═══════════════ */
 let aType='all',aAccess='all';
 function ab(a){return a==='Public'?'<span class="badge badge-public">Public</span>':a==='Partial'?'<span class="badge badge-partial">Partial</span>':'<span class="badge badge-restricted">Restricted</span>';}
 function tb(t){return t==='PE'?'<span class="badge badge-pe">PE</span>':'<span class="badge badge-pc">PC</span>';}
-function stockPill(f){
-  if(!f.parentTicker)return'';
-  return`<button class="stock-link" onclick="openStockModal('${f.id}')"><span class="stock-link-dot"></span>${f.parentTicker} · Live Data ↗</button>`;
-}
+function pill(f){if(!f.parentTicker)return'';return`<button class="stock-pill" onclick="openStockModal('${f.id}')"><span class="pill-dot"></span>${f.parentTicker} · Live Data ↗</button>`;}
 function getFiltered(){const q=document.getElementById('search').value.toLowerCase();return funds.filter(f=>{if(aType!=='all'&&f.type!==aType)return false;if(aAccess!=='all'&&f.access!==aAccess)return false;if(q&&!f.firm.toLowerCase().includes(q)&&!f.sectors.toLowerCase().includes(q))return false;return true;});}
 function renderFunds(){
   const fil=getFiltered();const g=document.getElementById('cardsGrid');
@@ -855,9 +847,8 @@ function renderFunds(){
     <div class="card-top"><div>
       <div class="card-firm">${f.firm}</div>
       <a class="card-website" href="${f.website}" target="_blank">${f.website.replace('https://','')}</a>
-      ${stockPill(f)}
-    </div>
-    <div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
+      ${pill(f)}
+    </div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
     <div class="card-meta">
       <div class="card-meta-item"><span class="card-meta-label">AUM</span><span class="card-meta-val">${f.aum}</span></div>
       <div class="card-meta-item"><span class="card-meta-label">Fund / IR Page</span><span class="card-meta-val"><a href="${f.fundPage}" target="_blank">${f.fundLabel} ↗</a></span></div>
@@ -870,12 +861,12 @@ document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-access]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-access]').forEach(x=>x.classList.remove('active'));b.classList.add('active');aAccess=b.dataset.access;renderFunds();}));
 document.getElementById('search').addEventListener('input',renderFunds);
 
-/* ═══════════════════════ PERFORMANCE ═══════════════════════ */
+/* ═══════════════ PERFORMANCE ═══════════════ */
 function renderPerformance(){
   document.getElementById('perfGrid').innerHTML=funds.map(f=>{
-    const p=f.perf;const pill=f.parentTicker?`<button class="stock-link" onclick="openStockModal('${f.id}')" style="margin-top:4px"><span class="stock-link-dot"></span>${f.parentTicker} · Live Data ↗</button>`:'';
-    if(f.access==='Restricted'&&!p.divYield)return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${pill}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div><div style="font-size:12px;color:var(--muted);padding:.5rem 0">Performance data available to institutional LPs only.</div><div class="perf-note">${p.totalReturnEst?'Est. return: <strong style="color:var(--accent)">'+p.totalReturnEst+'</strong>':''}<div class="perf-source">${p.dataSource}</div></div></div>`;
-    return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${pill}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
+    const p=f.perf;const sp=f.parentTicker?`<button class="stock-pill" onclick="openStockModal('${f.id}')" style="margin-top:4px"><span class="pill-dot"></span>${f.parentTicker} · Live Data ↗</button>`:'';
+    if(f.access==='Restricted'&&!p.divYield)return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${sp}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div><div style="font-size:12px;color:var(--muted);padding:.5rem 0">Performance data available to institutional LPs only.</div><div class="perf-note">${p.totalReturnEst?'Est. return: <strong style="color:var(--accent)">'+p.totalReturnEst+'</strong>':''}<div class="perf-source">${p.dataSource}</div></div></div>`;
+    return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${sp}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
     <div class="perf-metrics">
       <div class="pm"><span class="pm-label">NAV/Share</span><span class="pm-val neu">${p.navPS?'$'+p.navPS.toFixed(2):'N/A'}</span><span class="pm-sub">latest qtr</span></div>
       <div class="pm"><span class="pm-label">Div. Yield</span><span class="pm-val pos">${p.divYield?p.divYield.toFixed(1)+'%':'N/A'}</span><span class="pm-sub">${p.divQtr?'$'+p.divQtr+'/qtr':'ann.'}</span></div>
@@ -890,7 +881,7 @@ function renderPerformance(){
   }).join('');
 }
 
-/* ═══════════════════════ COMPARE ═══════════════════════ */
+/* ═══════════════ COMPARE ═══════════════ */
 let cmpSel=new Set();
 function renderChips(){
   document.getElementById('compareChips').innerHTML=funds.map(f=>{const s=cmpSel.has(f.id);const d=!s&&cmpSel.size>=5;return`<button class="chip${s?' selected':''}${d?' disabled':''}" onclick="togCmp('${f.id}')" ${d?'disabled':''}>${f.firm}</button>`;}).join('');
@@ -903,9 +894,9 @@ function renderCmpTable(){
   if(cmpSel.size<2){wrap.innerHTML='<div class="compare-empty">Select at least 2 funds above.</div>';return;}
   const sel=funds.filter(f=>cmpSel.has(f.id));
   const rows=[
-    {l:'Type',fn:f=>tb(f.type)},{l:'AUM',fn:f=>`<span style="font-size:12px;color:var(--text)">${f.aum}</span>`},{l:'Access',fn:f=>ab(f.access)},
+    {l:'Type',fn:f=>tb(f.type)},{l:'AUM',fn:f=>`<span style="color:var(--text)">${f.aum}</span>`},{l:'Access',fn:f=>ab(f.access)},
     {l:'Ticker',fn:f=>`<span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text)">${f.ticker||'—'}</span>`},
-    {l:'Live Data',fn:f=>f.parentTicker?`<button class="stock-link" onclick="openStockModal('${f.id}')">${f.parentTicker} ↗</button>`:`<span class="cell-na">N/A</span>`},
+    {l:'Live Data',fn:f=>f.parentTicker?`<button class="stock-pill" onclick="openStockModal('${f.id}')" style="font-size:10px;padding:2px 8px">${f.parentTicker} ↗</button>`:`<span class="cell-na">N/A</span>`},
     {l:'NAV/Share',fn:f=>f.perf.navPS?`<span class="cell-good">$${f.perf.navPS.toFixed(2)}</span>`:`<span class="cell-na">N/A</span>`},
     {l:'Div. Yield',fn:f=>f.perf.divYield?`<span class="cell-good">${f.perf.divYield.toFixed(1)}%</span>`:`<span class="cell-na">N/A</span>`},
     {l:'Qtr Dividend',fn:f=>f.perf.divQtr?`<span style="color:var(--text)">$${f.perf.divQtr}/sh</span>`:`<span class="cell-na">—</span>`},
@@ -918,10 +909,10 @@ function renderCmpTable(){
     {l:'Data As Of',fn:f=>`<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${f.dataDate}</span>`},
     {l:'Fund Page',fn:f=>`<a href="${f.fundPage}" target="_blank" style="color:#a8bce8;font-size:12px;text-decoration:none">${f.fundLabel} ↗</a>`},
   ];
-  wrap.innerHTML=`<div class="compare-table-wrap"><table class="ctable"><thead><tr><th>Metric</th>${sel.map(f=>`<th style="color:var(--text)">${f.firm}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td>${r.l}</td>${sel.map(f=>`<td>${r.fn(f)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  wrap.innerHTML=`<div class="compare-table-wrap"><table class="ctable"><thead><tr><th>Metric</th>${sel.map(f=>`<th>${f.firm}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td>${r.l}</td>${sel.map(f=>`<td>${r.fn(f)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-/* ═══════════════════════ TABS ═══════════════════════ */
+/* ═══════════════ TABS ═══════════════ */
 function showTab(name,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -929,8 +920,9 @@ function showTab(name,btn){
   if(name==='aggregation'){setTimeout(()=>{renderAggFilters();renderAggSummary();drawDonut('chart1','legend1','c1val',false);drawDonut('chart2','legend2','c2val',true);},60);}
 }
 
-/* ═══════════════════════ INIT ═══════════════════════ */
+/* ═══════════════ INIT ═══════════════ */
 function init(){
+  initBanner();
   document.getElementById('lastUpdated').textContent=`Updated: ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
   const pe=funds.filter(f=>f.type==='PE').length,pc=funds.filter(f=>f.type==='PC').length;
   const pub=funds.filter(f=>f.access==='Public').length,par=funds.filter(f=>f.access==='Partial').length,res=funds.filter(f=>f.access==='Restricted').length;
