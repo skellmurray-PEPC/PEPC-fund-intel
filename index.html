@@ -290,7 +290,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 </header>
 
 <!-- API KEY BANNER -->
-<div id="apiBanner" style="padding:.75rem 2rem;border-bottom:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.06)">
+<div id="apiBanner" style="display:none;padding:.75rem 2rem;border-bottom:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.06)">
   <div style="max-width:1600px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free FMP API key to enable the stock data modal. Get one free at <a href="https://financialmodelingprep.com/developer/docs" target="_blank" style="color:#a8bce8;text-decoration:none">financialmodelingprep.com ↗</a> (takes 2 min, no credit card).</div>
     <input type="text" id="apiKeyInput" placeholder="Paste your FMP API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
@@ -447,11 +447,9 @@ function showToastMsg(msg){
 }
 
 function initBanner(){
-  if(fmpKey){document.getElementById('apiBanner').style.display='none';}
-  else{
-    const inp=document.getElementById('apiKeyInput');
-    if(inp)inp.value='';
-  }
+  var banner=document.getElementById('apiBanner');
+  if(fmpKey){banner.style.display='none';}
+  else{banner.style.display='block';var inp=document.getElementById('apiKeyInput');if(inp)inp.value='';}
 }
 
 /* ═══════════════ STOCK MODAL ═══════════════ */
