@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FundIntel — Private Markets Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e29;--surface3:#222736;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#e8eaf0;--muted:#9aa0b0;--dim:#4a5060;--accent:#c8a96e;--accent3:#8b9fd4;--danger:#e07070;--warn:#c8a96e;--success:#7eb8a4;--pe:#8b9fd4;--pc:#7eb8a4;--r:6px;--rl:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+
+/* ── GATE ── */
+#gate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.gate-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
+.gate-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);margin-bottom:4px}
+.gate-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:2rem}
+.gate-label{font-size:12px;color:var(--muted);margin-bottom:8px;text-align:left}
+.gate-input{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;font-family:'Instrument Sans',sans-serif;outline:none;transition:border-color .2s;margin-bottom:12px;letter-spacing:2px}
+.gate-input:focus{border-color:var(--accent)}
+.gate-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:14px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;transition:opacity .15s}
+.gate-btn:hover{opacity:.85}
+.gate-err{font-size:12px;color:var(--danger);margin-top:8px;min-height:18px}
+.gate-note{font-size:11px;color:var(--dim);margin-top:1.5rem;line-height:1.6}
+#app{display:none}
+
+/* ── STOCK MODAL ── */
+#stockModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8000;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+#stockModal.open{display:flex}
+.smodal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:900px;padding:0;overflow:hidden;position:relative;margin:auto}
+.smodal-header{padding:1.5rem 2rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.smodal-company{display:flex;flex-direction:column;gap:3px}
+.smodal-name{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);font-weight:400}
+.smodal-ticker{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:1px}
+.smodal-close{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-size:18px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;line-height:1}
+.smodal-close:hover{color:var(--text);border-color:var(--dim)}
+.smodal-body{padding:1.5rem 2rem 2rem;display:flex;flex-direction:column;gap:1.5rem}
+.smodal-loading{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
+.smodal-error{text-align:center;padding:2rem;color:var(--danger);font-size:13px;line-height:1.7}
+
+/* key stats row */
+.kstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.kstat{background:var(--surface2);border-radius:var(--r);padding:12px 14px;border:1px solid var(--border)}
+.kstat-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.kstat-val{font-size:17px;font-weight:600;color:var(--text)}
+.kstat-val.pos{color:var(--success)}
+.kstat-val.neg{color:var(--danger)}
+.kstat-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* chart area */
+.chart-section{display:flex;flex-direction:column;gap:.75rem}
+.chart-section-title{font-size:13px;font-weight:600;color:var(--text)}
+.chart-period-btns{display:flex;gap:6px;flex-wrap:wrap}
+.period-btn{padding:4px 10px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s}
+.period-btn:hover{color:var(--text);border-color:var(--dim)}
+.period-btn.active{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
+.chart-canvas-wrap{position:relative;height:220px;background:var(--surface2);border-radius:var(--r);padding:1rem;border:1px solid var(--border)}
+#stockChart{width:100%!important;height:100%!important}
+
+/* quarterly table */
+.qtable-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r)}
+table.qtable{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+table.qtable th{padding:8px 12px;text-align:right;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+table.qtable th:first-child{text-align:left}
+table.qtable td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);text-align:right;white-space:nowrap}
+table.qtable td:first-child{text-align:left;color:var(--muted);font-size:11px}
+table.qtable tr:last-child td{border-bottom:none}
+table.qtable tr:hover td{background:var(--surface2)}
+.val-pos{color:var(--success)}
+.val-neg{color:var(--danger)}
+.smodal-disclaimer{font-size:11px;color:var(--dim);line-height:1.6;border-top:1px solid var(--border);padding-top:1rem}
+
+/* ── HEADER ── */
+header{border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:0;background:rgba(13,15,20,0.96);backdrop-filter:blur(12px);z-index:100}
+.header-inner{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:58px;gap:2rem}
+.logo{display:flex;align-items:baseline;gap:10px}
+.logo-text{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);letter-spacing:-.3px}
+.logo-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:1.5rem}
+.header-meta{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.signout-btn{font-size:11px;color:var(--dim);background:none;border:1px solid var(--border2);border-radius:var(--r);padding:4px 10px;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s}
+.signout-btn:hover{color:var(--text);border-color:var(--dim)}
+
+/* ── TABS ── */
+.tab-bar{border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;overflow-x:auto}
+.tab-inner{max-width:1600px;margin:0 auto;display:flex;white-space:nowrap}
+.tab-btn{padding:13px 18px;font-size:13px;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(135deg,#13161e 0%,#151a26 100%);border-bottom:1px solid var(--border);padding:2rem}
+.hero-inner{max-width:1600px;margin:0 auto}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(22px,3.5vw,40px);font-weight:400;color:var(--text);letter-spacing:-.5px;line-height:1.15;margin-bottom:.4rem}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero p{color:var(--muted);font-size:13px;max-width:660px;line-height:1.7;margin-bottom:1.25rem}
+.stat-row{display:flex;gap:1.75rem;flex-wrap:wrap}
+.stat-num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--accent);line-height:1;display:block}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;display:block}
+
+/* ── CONTROLS ── */
+.controls-bar{padding:.75rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:58px;z-index:90}
+.controls-inner{max-width:1600px;margin:0 auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-wrap{position:relative;flex:1;min-width:160px;max-width:300px}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:14px}
+input[type=text]{width:100%;padding:7px 10px 7px 28px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;font-family:'Instrument Sans',sans-serif;outline:none;transition:border-color .2s}
+input[type=text]:focus{border-color:var(--accent)}
+input[type=text]::placeholder{color:var(--muted)}
+.filter-btn{padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;font-family:'Instrument Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-btn:hover{border-color:var(--dim);color:var(--text)}
+.filter-btn.active{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
+.vdiv{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0}
+.count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap}
+
+/* ── LEGEND BAR ── */
+.legend-bar{padding:.5rem 2rem;border-bottom:1px solid var(--border);background:var(--bg)}
+.legend-inner{max-width:1600px;margin:0 auto;display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
+.legend-label{font-size:11px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── MAIN ── */
+.main{max-width:1600px;margin:0 auto;padding:1.5rem 2rem 4rem}
+
+/* ── FUND CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(390px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.fund-card{background:var(--surface);padding:1.25rem 1.5rem;transition:background .15s;display:flex;flex-direction:column;gap:.7rem}
+.fund-card:hover{background:var(--surface2)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}
+.card-firm{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.card-website{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);text-decoration:none;margin-top:2px;display:block}
+.card-website:hover{color:var(--accent)}
+.badges{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:10px;font-family:'DM Mono',monospace;padding:3px 7px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;font-weight:500;white-space:nowrap}
+.badge-pe{background:rgba(139,159,212,.15);color:#a8bce8;border:1px solid rgba(139,159,212,.3)}
+.badge-pc{background:rgba(126,184,164,.15);color:#9ed4be;border:1px solid rgba(126,184,164,.3)}
+.badge-public{background:rgba(126,184,164,.12);color:#9ed4be;border:1px solid rgba(126,184,164,.25)}
+.badge-partial{background:rgba(200,169,110,.12);color:#d4b87a;border:1px solid rgba(200,169,110,.25)}
+.badge-restricted{background:rgba(201,110,110,.12);color:#e09090;border:1px solid rgba(201,110,110,.25)}
+.card-meta{display:flex;gap:1.25rem;font-size:12px;flex-wrap:wrap}
+.card-meta-item{display:flex;flex-direction:column;gap:1px}
+.card-meta-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+.card-meta-val{color:var(--text);font-weight:500}
+.card-meta-val a{color:#a8bce8;text-decoration:none}
+.card-meta-val a:hover{color:var(--accent);text-decoration:underline}
+.card-sectors{font-size:12px;color:var(--muted);line-height:1.65;border-left:2px solid var(--dim);padding-left:10px}
+.card-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--dim);margin-top:3px}
+/* stock link pill */
+.stock-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.25);border-radius:20px;padding:3px 9px;cursor:pointer;transition:all .15s;margin-top:2px;text-decoration:none}
+.stock-link:hover{background:rgba(200,169,110,.2);color:#e0c080}
+.stock-link-dot{width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;flex-shrink:0}
+
+/* ── PERFORMANCE ── */
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.perf-card{background:var(--surface);padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.8rem;transition:background .15s}
+.perf-card:hover{background:var(--surface2)}
+.perf-top{display:flex;justify-content:space-between;align-items:flex-start}
+.perf-firm{font-size:14px;font-weight:600;color:var(--text)}
+.perf-ticker{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px}
+.perf-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pm{display:flex;flex-direction:column;gap:2px}
+.pm-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+.pm-val{font-size:15px;font-weight:600;color:var(--text)}
+.pm-val.pos{color:var(--success)}.pm-val.neg{color:var(--danger)}.pm-val.neu{color:var(--accent)}
+.pm-sub{font-size:11px;color:var(--muted)}
+.perf-bar-wrap{display:flex;flex-direction:column;gap:4px}
+.perf-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.perf-bar-track{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.perf-bar-fill{height:100%;border-radius:2px}
+.perf-note{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:.6rem}
+.perf-source{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px}
+
+/* ── COMPARE ── */
+.compare-section{display:flex;flex-direction:column;gap:1.5rem}
+.compare-selector{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem 1.5rem}
+.compare-chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all .15s}
+.chip:hover{border-color:var(--dim);color:var(--text)}
+.chip.selected{background:var(--surface2);border-color:var(--accent);color:#e0c890}
+.compare-hint{font-size:12px;color:var(--dim);margin-top:.75rem}
+.compare-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--rl)}
+table.ctable{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+table.ctable th{padding:9px 14px;text-align:left;font-size:11px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.5px;background:var(--surface);border-bottom:1px solid var(--border);white-space:nowrap}
+table.ctable td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+table.ctable tr:last-child td{border-bottom:none}
+table.ctable tr:hover td{background:var(--surface2)}
+table.ctable td:first-child{font-weight:600;font-size:12px;white-space:nowrap;color:var(--muted)}
+.cell-good{color:var(--success)}.cell-bad{color:var(--danger)}.cell-na{color:var(--dim);font-style:italic}
+.compare-empty{text-align:center;padding:3rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--rl)}
+
+/* ── AGGREGATION ── */
+.agg-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:920px){.agg-layout{grid-template-columns:1fr}}
+.agg-controls{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem 1.5rem;margin-bottom:1.5rem}
+.agg-controls h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.85rem}
+.agg-controls-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.agg-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
+.agg-chart-title{font-size:14px;font-weight:600;color:var(--text)}
+.agg-chart-sub{font-size:12px;color:var(--muted);line-height:1.6;margin-top:3px}
+.abadge{display:inline-block;font-size:10px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;margin-left:6px;vertical-align:middle}
+.abadge-v{background:rgba(126,184,164,.15);color:#9ed4be;border:1px solid rgba(126,184,164,.3)}
+.abadge-e{background:rgba(200,169,110,.15);color:#d4b87a;border:1px solid rgba(200,169,110,.3)}
+.chart-wrap{position:relative;max-width:280px;width:100%;margin:0 auto}
+.chart-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.chart-center-val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text)}
+.chart-center-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+canvas.donut{display:block;width:100%!important;height:auto!important}
+.leg-list{display:flex;flex-direction:column;gap:3px;max-height:300px;overflow-y:auto;padding-right:2px}
+.leg-list::-webkit-scrollbar{width:3px}
+.leg-list::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
+.leg-row{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:4px;cursor:pointer;transition:background .1s}
+.leg-row:hover{background:var(--surface2)}
+.leg-row.faded{opacity:.28}
+.leg-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.leg-name{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leg-pct{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);flex-shrink:0;font-weight:500}
+.leg-amt{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;margin-left:4px}
+.agg-summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.5rem}
+.agg-metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.agg-metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:3px}
+.agg-metric-val{font-size:18px;font-weight:600;color:var(--text)}
+.agg-metric-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ── TOOLTIP ── */
+#tooltip{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;pointer-events:none;z-index:500;display:none;line-height:1.7;min-width:160px}
+#tooltip .tt-name{font-weight:600;color:var(--text);margin-bottom:2px;font-size:13px}
+#tooltip .tt-pct{color:var(--accent);font-family:'DM Mono',monospace;font-weight:600}
+#tooltip .tt-amt{color:var(--text);font-family:'DM Mono',monospace;font-size:11px}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.empty h3{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:var(--text);margin-bottom:.5rem}
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--surface)}
+.footer-inner{max-width:1600px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.footer-note{font-size:12px;color:var(--muted);line-height:1.6;max-width:700px}
+.footer-stamp{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);white-space:nowrap}
+.section{display:none}.section.active{display:block}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+@media(max-width:700px){.cards-grid,.perf-grid{grid-template-columns:1fr}.hero h1{font-size:22px}header,.controls-bar,.legend-bar,.main,footer,.tab-bar,.hero,.agg-controls{padding-left:1rem;padding-right:1rem}.perf-metrics{grid-template-columns:1fr 1fr}.kstats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">FundIntel</div>
+    <div class="gate-sub">Private Markets Intelligence</div>
+    <div class="gate-label">Access password</div>
+    <input class="gate-input" type="password" id="pwInput" placeholder="••••••••" autocomplete="current-password"/>
+    <button class="gate-btn" onclick="checkPw()">Enter</button>
+    <div class="gate-err" id="pwErr"></div>
+    <p class="gate-note">This page is for authorized users only.<br>Contact the administrator if you need access.</p>
+  </div>
+</div>
+
+<!-- STOCK MODAL -->
+<div id="stockModal">
+  <div class="smodal">
+    <div class="smodal-header">
+      <div class="smodal-company">
+        <div class="smodal-name" id="sModalName">—</div>
+        <div class="smodal-ticker" id="sModalTicker">—</div>
+      </div>
+      <button class="smodal-close" onclick="closeStockModal()">✕</button>
+    </div>
+    <div class="smodal-body" id="sModalBody">
+      <div class="smodal-loading">Loading market data…</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-text">FundIntel</span><span class="logo-tag">Private Markets</span></div>
+    <div class="header-right">
+      <div class="header-meta" id="lastUpdated"></div>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab-inner">
+    <button class="tab-btn active" onclick="showTab('funds',this)">Fund Directory</button>
+    <button class="tab-btn" onclick="showTab('performance',this)">Performance &amp; Yields</button>
+    <button class="tab-btn" onclick="showTab('compare',this)">Compare Funds</button>
+    <button class="tab-btn" onclick="showTab('aggregation',this)">Sector Aggregation</button>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1>Private Equity &amp; Credit<br><em>Fund Intelligence</em></h1>
+    <p>Coverage of 25 leading PE and Private Credit managers — access flags, fund pages, portfolio sector compositions, live performance data, fund comparisons, and aggregated sector analysis.</p>
+    <div class="stat-row" id="heroStats"></div>
+  </div>
+</section>
+
+<!-- FUND DIRECTORY -->
+<div id="tab-funds" class="section active">
+  <div class="controls-bar"><div class="controls-inner">
+    <div class="search-wrap"><span class="search-icon">⌕</span><input type="text" id="search" placeholder="Search firms, sectors…"/></div>
+    <div class="vdiv"></div>
+    <button class="filter-btn active" data-type="all">All</button>
+    <button class="filter-btn" data-type="PE">Private Equity</button>
+    <button class="filter-btn" data-type="PC">Private Credit</button>
+    <div class="vdiv"></div>
+    <button class="filter-btn active" data-access="all">All Access</button>
+    <button class="filter-btn" data-access="Public">Public</button>
+    <button class="filter-btn" data-access="Partial">Partial</button>
+    <button class="filter-btn" data-access="Restricted">Restricted</button>
+    <span class="count-badge" id="countBadge"></span>
+  </div></div>
+  <div class="legend-bar"><div class="legend-inner">
+    <span class="legend-label">Access</span>
+    <span class="legend-item"><span class="dot" style="background:var(--success)"></span>Public — SEC filings freely available</span>
+    <span class="legend-item"><span class="dot" style="background:var(--warn)"></span>Partial — summary public; full detail gated</span>
+    <span class="legend-item"><span class="dot" style="background:var(--danger)"></span>Restricted — institutional / accredited only</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--dim)">BDC filings: <a href="https://www.sec.gov/cgi-bin/browse-edgar" target="_blank" style="color:#a8bce8;text-decoration:none">SEC EDGAR ↗</a></span>
+  </div></div>
+  <div class="main"><div class="cards-grid" id="cardsGrid"></div><div class="empty" id="emptyState" style="display:none"><div style="font-size:32px;color:var(--dim);margin-bottom:.75rem">◎</div><h3>No funds match</h3><p>Try adjusting your filters.</p></div></div>
+</div>
+
+<!-- PERFORMANCE -->
+<div id="tab-performance" class="section">
+  <div class="main">
+    <div style="margin-bottom:1.25rem">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:.4rem">Performance &amp; Yield Data</h2>
+      <p style="color:var(--muted);font-size:13px;max-width:680px">Publicly traded BDC metrics from SEC filings. Private fund data estimated from public commentary and LP letters. Click the stock ticker button on any publicly traded parent company to view live market data.</p>
+    </div>
+    <div class="perf-grid" id="perfGrid"></div>
+  </div>
+</div>
+
+<!-- COMPARE -->
+<div id="tab-compare" class="section">
+  <div class="main">
+    <div class="compare-section">
+      <div class="compare-selector">
+        <h3 style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:.75rem">Select funds to compare <span style="font-weight:400;color:var(--muted)">(2–5)</span></h3>
+        <div class="compare-chips" id="compareChips"></div>
+        <div class="compare-hint" id="compareHint">Select at least 2 funds.</div>
+      </div>
+      <div id="compareTableWrap"><div class="compare-empty">Select funds above to begin comparing.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- AGGREGATION -->
+<div id="tab-aggregation" class="section">
+  <div class="main">
+    <div style="margin-bottom:1.25rem">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:.4rem">Sector Aggregation</h2>
+      <p style="color:var(--muted);font-size:13px;max-width:760px">Aggregated sector exposure weighted by AUM across selected funds. Hover chart segments or legend rows for details. Use filter buttons to include or exclude specific funds.</p>
+    </div>
+    <div class="agg-controls"><h3>Filter Funds Included</h3><div class="agg-controls-row" id="aggFundFilters"></div></div>
+    <div class="agg-summary-grid" id="aggSummary"></div>
+    <div class="agg-layout">
+      <div class="agg-chart-card">
+        <div><div class="agg-chart-title">SEC-Confirmed Data Only <span class="abadge abadge-v">Verified</span></div>
+        <div class="agg-chart-sub">Derived exclusively from SEC 10-Q / 10-K filings for publicly traded BDCs: ARCC ($29.5B), OBDC ($16.5B), GBDC ($9.9B), CCAP ($2.9B). ~$62B combined fair value.</div></div>
+        <div class="chart-wrap"><canvas class="donut" id="chart1" width="280" height="280"></canvas>
+          <div class="chart-center"><div class="chart-center-val" id="c1val"></div><div class="chart-center-label">Confirmed</div></div></div>
+        <div class="leg-list" id="legend1"></div>
+      </div>
+      <div class="agg-chart-card">
+        <div><div class="agg-chart-title">Full Universe — Confirmed + Estimated <span class="abadge abadge-e">Includes Est.</span></div>
+        <div class="agg-chart-sub">Adds estimated sector allocations for all 21 additional funds based on earnings calls, LP letters, and peer benchmarks.</div></div>
+        <div class="chart-wrap"><canvas class="donut" id="chart2" width="280" height="280"></canvas>
+          <div class="chart-center"><div class="chart-center-val" id="c2val"></div><div class="chart-center-label">Total Est.</div></div></div>
+        <div class="leg-list" id="legend2"></div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:1.5rem;line-height:1.7"><strong style="color:var(--text)">Methodology:</strong> Confirmed sectors use SEC-filed % × AUM at fair value (Q4 2025). Estimated sectors use publicly disclosed themes from earnings calls and industry benchmarks. Private fund AUM figures proxy deployed capital. All estimated allocations carry ±5–10% margin.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <p class="footer-note">Data from SEC EDGAR filings, fund fact sheets, annual reports, and public investor letters. Live stock data via Yahoo Finance (may be delayed 15 min). Portfolio compositions change quarterly. Not investment advice.</p>
+    <span class="footer-stamp">FundIntel · v4.0 · March 2026</span>
+  </div>
+</footer>
+</div><!-- end #app -->
+
+<div id="tooltip"><div class="tt-name" id="tt-name"></div><div class="tt-pct" id="tt-pct"></div><div class="tt-amt" id="tt-amt"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ═══════════════════════ PASSWORD ═══════════════════════ */
+const PASSWORD="fundintel2026";
+function checkPw(){const v=document.getElementById('pwInput').value;if(v===PASSWORD){sessionStorage.setItem('fi_auth','1');document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';init();}else{document.getElementById('pwErr').textContent='Incorrect password.';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();}}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw()});
+function signOut(){sessionStorage.removeItem('fi_auth');document.getElementById('gate').style.display='flex';document.getElementById('app').style.display='none';}
+if(sessionStorage.getItem('fi_auth')==='1'){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';}
+
+/* ═══════════════════════ FUNDS DATA ═══════════════════════ */
+const funds=[
+  {id:'arcc',firm:"Ares Capital (ARCC)",type:"PC",aum:"$29.5B",aum_b:29.5,access:"Public",website:"https://www.arescapitalcorp.com",fundPage:"https://www.arescapitalcorp.com/portfolio",fundLabel:"ARCC Portfolio",ticker:"ARCC",parentTicker:"ARCC",parentName:"Ares Capital Corp",
+   sectors:"Software & Services 46.5%, Healthcare 9%, Business Services 8%, Industrials 5%, Consumer Products 5%, Financial Services 4%, Other 22.5%. 603 companies. $29.5B FV.",dataDate:"Dec 2025",
+   perf:{navPS:19.94,divYield:9.91,divQtr:0.48,niiPS:2.01,totalReturnEst:"~12–14% (5yr ann.)",leverage:"1.08x",floatPct:100,nonAccrualPct:1.2,dataSource:"SEC Exhibit 99.1, Feb 2026"},
+   confirmed:{"Software & Services":46.5,"Healthcare":9.0,"Business Services":8.0,"Industrials":5.0,"Consumer Products":5.0,"Financial Services":4.0,"Other":22.5}},
+  {id:'obdc',firm:"Blue Owl (OBDC)",type:"PC",aum:"$16.5B",aum_b:16.5,access:"Public",website:"https://www.blueowlcapitalcorporation.com",fundPage:"https://www.blueowlcapitalcorporation.com/investors",fundLabel:"OBDC IR",ticker:"OBDC",parentTicker:"OWL",parentName:"Blue Owl Capital Inc",
+   sectors:"Software & Services 13%, Insurance 7.6%, Healthcare 8%, Business Services 7%, Consumer 6%, Industrials 6%, Financial Services 6%, Other 46.4%. 234 companies.",dataDate:"Dec 2025",
+   perf:{navPS:14.81,divYield:10.0,divQtr:0.37,niiPS:0.38,totalReturnEst:"~10–11% (ann.)",leverage:"1.18x",floatPct:100,nonAccrualPct:1.1,dataSource:"SEC Exhibit 99.1, Feb 2026"},
+   confirmed:{"Software & Services":13.0,"Insurance":7.6,"Healthcare":8.0,"Business Services":7.0,"Consumer Products":6.0,"Industrials":6.0,"Financial Services":6.0,"Other":46.4}},
+  {id:'gbdc',firm:"Golub Capital BDC (GBDC)",type:"PC",aum:"~$9.9B",aum_b:9.9,access:"Public",website:"https://golubcapitalbdc.com",fundPage:"https://golubcapitalbdc.com/portfolio/",fundLabel:"GBDC Portfolio",ticker:"GBDC",parentTicker:"GBDC",parentName:"Golub Capital BDC Inc",
+   sectors:"Software 20%, Healthcare 20%, Financial Services 11%, Hotels/Leisure 5%, IT Services 5%, Consumer Products 4%, Automobiles 4%, Other 31%. 458 companies.",dataDate:"Dec 2025",
+   perf:{navPS:14.97,divYield:10.4,divQtr:0.39,niiPS:0.39,totalReturnEst:"~10–12% (ann.)",leverage:"1.26x",floatPct:100,nonAccrualPct:0.8,dataSource:"SEC GBDC FY2025 10-K, Nov 2025"},
+   confirmed:{"Software & Services":20.0,"Healthcare":20.0,"Financial Services":11.0,"Hotels/Leisure":5.0,"IT Services":5.0,"Consumer Products":4.0,"Automobiles":4.0,"Other":31.0}},
+  {id:'ccap',firm:"Crescent Capital (CCAP)",type:"PC",aum:"~$2.9B",aum_b:2.9,access:"Public",website:"https://www.crescentcap.com",fundPage:"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=CCAP",fundLabel:"SEC EDGAR",ticker:"CCAP",parentTicker:"CCAP",parentName:"Crescent Capital BDC Inc",
+   sectors:"Software & Services 22.3%, Healthcare 11.3%, Industrials 9.1%, Pharma/Biotech 8.1%, Media 6.8%, Business Services 5.6%, Financial Services 5.4%, Other 31.4%. 167 companies.",dataDate:"Dec 2025",
+   perf:{navPS:19.10,divYield:8.8,divQtr:0.42,niiPS:0.45,totalReturnEst:"~9–11% (ann.)",leverage:"1.20x",floatPct:98,nonAccrualPct:0.9,dataSource:"SEC Exhibit 99.1, Feb 2026"},
+   confirmed:{"Software & Services":22.3,"Healthcare":11.3,"Industrials":9.1,"Pharma/Biotech":8.1,"Media & Entertainment":6.8,"Business Services":5.6,"Financial Services":5.4,"Other":31.4}},
+  {id:'bcred',firm:"Blackstone Credit (BCRED)",type:"PC",aum:"$82.2B",aum_b:82.2,access:"Partial",website:"https://www.bcred.com",fundPage:"https://www.bcred.com/shareholders/",fundLabel:"BCRED Shareholders",ticker:"BCRED",parentTicker:"BX",parentName:"Blackstone Inc",
+   sectors:"Software (largest), Professional Services, Health Care — top 3 ~45%. 95% senior secured. Avg EBITDA $256M.",dataDate:"Feb 2026",
+   perf:{navPS:null,divYield:8.1,divQtr:null,niiPS:null,totalReturnEst:"~8–10% target",leverage:"~1.0x",floatPct:95,nonAccrualPct:null,dataSource:"BCRED report Q4 2025"},
+   estimated:{"Software & Services":22.0,"Business Services":15.0,"Healthcare":13.0,"Financial Services":10.0,"Industrials":8.0,"Consumer Products":7.0,"Real Assets":5.0,"Other":20.0}},
+  {id:'cclfx',firm:"Cliffwater (CCLFX)",type:"PC",aum:"~$33B",aum_b:33.0,access:"Partial",website:"https://www.cliffwater.com",fundPage:"https://www.cliffwater.com/funds/cliffwater-corporate-lending-fund",fundLabel:"CCLFX Page",ticker:"CCLFX",parentTicker:null,parentName:null,
+   sectors:"Direct Lending 38.9%, Opportunistic 18.1%, Liquid Credit 14.7%, Structured 13.6%, Asset-Backed 5.9%, Real Assets 3.8%. Software/HC/Financials ~40% combined.",dataDate:"Dec 2025",
+   perf:{navPS:null,divYield:9.2,divQtr:null,niiPS:null,totalReturnEst:"~9–10% target",leverage:"~0.9x",floatPct:85,nonAccrualPct:null,dataSource:"Cliffwater Q4 2025"},
+   estimated:{"Software & Services":18.0,"Healthcare":12.0,"Financial Services":10.0,"Industrials":9.0,"Consumer Products":8.0,"Real Assets":6.0,"Business Services":7.0,"Other":30.0}},
+  {id:'apollo_cr',firm:"Apollo Credit",type:"PC",aum:"$500B (firm)",aum_b:120.0,access:"Partial",website:"https://www.apollo.com",fundPage:"https://ir.apollo.com",fundLabel:"Apollo IR",ticker:"APO",parentTicker:"APO",parentName:"Apollo Global Management Inc",
+   sectors:"Capital Goods/Industrials 24.5%, Financial Services 24.5%, Business Services 21.7%, Consumer 15%, Energy 4.2%, Other 10.1%. 100% first lien.",dataDate:"Dec 2025",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~9–12% (est.)",leverage:"~1.1x",floatPct:90,nonAccrualPct:null,dataSource:"Apollo IR / ADS report"},
+   estimated:{"Industrials":24.5,"Financial Services":24.5,"Business Services":21.7,"Consumer Products":15.0,"Energy":4.2,"Other":10.1}},
+  {id:'oaktree',firm:"Oaktree Capital",type:"PC",aum:"~$200B",aum_b:50.0,access:"Restricted",website:"https://www.oaktreecapital.com",fundPage:"https://www.oaktreecapital.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"OAK",parentName:"Oaktree Capital Group (Brookfield sub)",
+   sectors:"Opportunistic/distressed. Software/Services, Retail, Pharma, Food & Drug, Health Services ~30% combined.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~10–15% gross",leverage:"Varies",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Software & Services":12.0,"Healthcare":10.0,"Consumer Products":12.0,"Financial Services":10.0,"Pharma/Biotech":8.0,"Industrials":8.0,"Real Assets":8.0,"Other":32.0}},
+  {id:'hps',firm:"HPS Investment Partners",type:"PC",aum:"$148B+",aum_b:80.0,access:"Restricted",website:"https://www.hpspartners.com",fundPage:"https://www.hpspartners.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:"BLK",parentName:"BlackRock Inc (parent since 2024)",
+   sectors:"Senior secured direct lending. Software, healthcare, professional services dominant. Avg EBITDA ~$255M.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~9–12% (est.)",leverage:"~1.0–1.2x",floatPct:90,nonAccrualPct:null,dataSource:"Institutional LP / BlackRock IR"},
+   estimated:{"Software & Services":20.0,"Healthcare":15.0,"Business Services":15.0,"Financial Services":12.0,"Industrials":10.0,"Consumer Products":8.0,"Other":20.0}},
+  {id:'sixthst',firm:"Sixth Street",type:"PC",aum:"~$75B",aum_b:40.0,access:"Restricted",website:"https://www.sixthstreet.com",fundPage:"https://www.sixthstreet.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Direct lending, growth lending (tech/life sciences), opportunistic credit, infrastructure.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~11–15% gross",leverage:"Varies",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Technology":22.0,"Healthcare":15.0,"Financial Services":14.0,"Infrastructure":12.0,"Media & Entertainment":8.0,"Business Services":8.0,"Other":21.0}},
+  {id:'barings',firm:"Barings",type:"PC",aum:"~$390B",aum_b:45.0,access:"Partial",website:"https://www.barings.com",fundPage:"https://www.barings.com/us/en/investment-strategies/private-credit",fundLabel:"Private Credit",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Middle-market US & Europe. Software/tech, healthcare, business services, consumer. 90%+ senior secured.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~8–11% (est.)",leverage:"~1.0x",floatPct:85,nonAccrualPct:null,dataSource:"Advisor/institutional portal"},
+   estimated:{"Software & Services":18.0,"Healthcare":14.0,"Business Services":13.0,"Consumer Products":12.0,"Financial Services":10.0,"Industrials":9.0,"Other":24.0}},
+  {id:'churchill',firm:"Churchill Asset Mgmt",type:"PC",aum:"~$50B",aum_b:30.0,access:"Restricted",website:"https://www.churchillam.com",fundPage:"https://www.churchillam.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Middle-market direct lending. PE-sponsored. Software, healthcare, business services, consumer.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~8–10% (est.)",leverage:"~1.0–1.1x",floatPct:85,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Software & Services":20.0,"Healthcare":16.0,"Business Services":14.0,"Consumer Products":12.0,"Financial Services":10.0,"Industrials":8.0,"Other":20.0}},
+  {id:'bx_pe',firm:"Blackstone (PE)",type:"PE",aum:"$1T+ (firm)",aum_b:90.0,access:"Partial",website:"https://www.blackstone.com",fundPage:"https://ir.blackstone.com",fundLabel:"Investor Relations",ticker:"BX",parentTicker:"BX",parentName:"Blackstone Inc",
+   sectors:"Technology, Healthcare, Real Estate, Financials, Industrials, Consumer. Buy-and-build strategy.",dataDate:"Dec 2025",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross flagship",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"BX earnings / IR quarterly"},
+   estimated:{"Technology":22.0,"Healthcare":15.0,"Real Estate":12.0,"Financial Services":12.0,"Industrials":10.0,"Consumer Products":10.0,"Business Services":8.0,"Other":11.0}},
+  {id:'apollo_pe',firm:"Apollo Global (PE)",type:"PE",aum:"$840B+ (firm)",aum_b:70.0,access:"Partial",website:"https://www.apollo.com",fundPage:"https://ir.apollo.com",fundLabel:"Investor Relations",ticker:"APO",parentTicker:"APO",parentName:"Apollo Global Management Inc",
+   sectors:"Distressed, financial services, insurance (Athene), industrials, consumer, technology. Financials ~25%.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Apollo IR quarterly"},
+   estimated:{"Financial Services":25.0,"Industrials":15.0,"Consumer Products":15.0,"Technology":12.0,"Healthcare":10.0,"Real Assets":8.0,"Other":15.0}},
+  {id:'kkr',firm:"KKR",type:"PE",aum:"$686B (firm)",aum_b:85.0,access:"Partial",website:"https://www.kkr.com",fundPage:"https://ir.kkr.com",fundLabel:"Investor Relations",ticker:"KKR",parentTicker:"KKR",parentName:"KKR & Co Inc",
+   sectors:"567 companies. Enterprise Tech, Healthcare, Consumer, Financial Services, Industrials, Infrastructure. APAC growth.",dataDate:"Mar 2026",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~18–22% gross flagship",leverage:"~50–65% LTV",floatPct:null,nonAccrualPct:null,dataSource:"KKR IR quarterly"},
+   estimated:{"Technology":20.0,"Healthcare":15.0,"Consumer Products":15.0,"Financial Services":12.0,"Industrials":10.0,"Infrastructure":10.0,"Business Services":8.0,"Other":10.0}},
+  {id:'carlyle',firm:"The Carlyle Group",type:"PE",aum:"~$426B (firm)",aum_b:60.0,access:"Partial",website:"https://www.carlyle.com",fundPage:"https://ir.carlyle.com",fundLabel:"Investor Relations",ticker:"CG",parentTicker:"CG",parentName:"Carlyle Group Inc",
+   sectors:"Aerospace & Defense, Healthcare, Technology, Consumer & Retail, Energy/Real Assets.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–18% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"CG IR quarterly"},
+   estimated:{"Aerospace & Defense":18.0,"Healthcare":15.0,"Technology":14.0,"Consumer Products":12.0,"Energy":12.0,"Financial Services":10.0,"Industrials":10.0,"Other":9.0}},
+  {id:'eqt',firm:"EQT",type:"PE",aum:"~$270B",aum_b:55.0,access:"Partial",website:"https://www.eqtgroup.com",fundPage:"https://www.eqtgroup.com/investors",fundLabel:"Investor Relations",ticker:"EQT SE",parentTicker:"EQTAB.ST",parentName:"EQT AB (Nasdaq Stockholm)",
+   sectors:"Technology/Software (largest), Healthcare, Services. EQT X flagship. Digitization, life sciences.",dataDate:"2026",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~18–22% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"EQT IR quarterly"},
+   estimated:{"Technology":30.0,"Healthcare":22.0,"Business Services":16.0,"Financial Services":10.0,"Consumer Products":8.0,"Industrials":8.0,"Other":6.0}},
+  {id:'thoma',firm:"Thoma Bravo",type:"PE",aum:"~$130B",aum_b:60.0,access:"Restricted",website:"https://www.thomabravo.com",fundPage:"https://www.thomabravo.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"100% enterprise software & technology. Proofpoint, SolarWinds, Hyland, Veracode, Qlik.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~20–25% gross",leverage:"~50–65% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Technology":100.0}},
+  {id:'silverlake',firm:"Silver Lake",type:"PE",aum:"~$100B+",aum_b:50.0,access:"Restricted",website:"https://www.silverlake.com",fundPage:"https://www.silverlake.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"100% technology and tech-adjacent. Enterprise software, semiconductors, internet, media.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~18–22% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Technology":85.0,"Media & Entertainment":10.0,"Other":5.0}},
+  {id:'vista',firm:"Vista Equity Partners",type:"PE",aum:"~$100B",aum_b:50.0,access:"Restricted",website:"https://www.vistaequitypartners.com",fundPage:"https://www.vistaequitypartners.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Exclusively enterprise software & data/analytics. Buyout, Foundation, Endeavor strategies.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~18–22% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Technology":100.0}},
+  {id:'tpg',firm:"TPG Capital",type:"PE",aum:"~$222B",aum_b:50.0,access:"Partial",website:"https://www.tpg.com",fundPage:"https://ir.tpg.com",fundLabel:"Investor Relations",ticker:"TPG",parentTicker:"TPG",parentName:"TPG Inc",
+   sectors:"Healthcare, Technology, Consumer/Retail, Financial Services. TPG Rise (impact investing).",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"TPG IR quarterly"},
+   estimated:{"Healthcare":25.0,"Technology":22.0,"Consumer Products":18.0,"Financial Services":15.0,"Business Services":10.0,"Other":10.0}},
+  {id:'warburg',firm:"Warburg Pincus",type:"PE",aum:"~$83B",aum_b:40.0,access:"Restricted",website:"https://www.warburgpincus.com",fundPage:"https://www.warburgpincus.com/investing",fundLabel:"Approach",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Growth equity. Healthcare (largest), Technology, Financial Services, Energy, Consumer.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"Minimal",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Healthcare":28.0,"Technology":20.0,"Financial Services":18.0,"Energy":12.0,"Consumer Products":12.0,"Other":10.0}},
+  {id:'ga',firm:"General Atlantic",type:"PE",aum:"~$83B",aum_b:40.0,access:"Restricted",website:"https://www.generalatlantic.com",fundPage:"https://www.generalatlantic.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Growth equity. Technology (largest), Fintech, Digital Health, Consumer. US, Europe, APAC, LatAm.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"Minimal",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Technology":35.0,"Financial Services":20.0,"Healthcare":18.0,"Consumer Products":15.0,"Business Services":7.0,"Other":5.0}},
+  {id:'bain',firm:"Bain Capital",type:"PE",aum:"~$185B",aum_b:55.0,access:"Restricted",website:"https://www.baincapital.com",fundPage:"https://www.baincapital.com/strategies",fundLabel:"Strategies",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"Buyout, Venture/Growth, Real Estate, Credit. Healthcare, Technology, Consumer, Financials, Industrials.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Healthcare":22.0,"Technology":18.0,"Consumer Products":18.0,"Financial Services":15.0,"Industrials":12.0,"Other":15.0}},
+  {id:'cvc',firm:"CVC Capital Partners",type:"PE",aum:"~$180B",aum_b:50.0,access:"Restricted",website:"https://www.cvc.com",fundPage:"https://www.cvc.com/our-funds",fundLabel:"Our Funds",ticker:"N/A",parentTicker:null,parentName:null,
+   sectors:"European mid-to-large buyouts. Healthcare, Business Services, Financial Services, TMT, Consumer.",dataDate:"2025 est.",
+   perf:{navPS:null,divYield:null,divQtr:null,niiPS:null,totalReturnEst:"~15–20% gross",leverage:"~50–60% LTV",floatPct:null,nonAccrualPct:null,dataSource:"Institutional LP only"},
+   estimated:{"Healthcare":20.0,"Business Services":18.0,"Financial Services":16.0,"Technology":16.0,"Consumer Products":16.0,"Other":14.0}},
+];
+
+/* ═══════════════════════ STOCK MODAL ═══════════════════════ */
+let stockChartInst=null;
+let currentPriceData={};
+
+function openStockModal(fundId){
+  const f=funds.find(x=>x.id===fundId);
+  if(!f||!f.parentTicker)return;
+  document.getElementById('sModalName').textContent=f.parentName||f.firm;
+  document.getElementById('sModalTicker').textContent=f.parentTicker+' · Parent Company Stock';
+  document.getElementById('sModalBody').innerHTML='<div class="smodal-loading">Fetching live market data…<br><span style="font-size:11px;color:var(--dim);margin-top:8px;display:block">Connecting to Yahoo Finance</span></div>';
+  document.getElementById('stockModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  fetchStockData(f.parentTicker,f.parentName||f.firm);
+}
+
+function closeStockModal(){
+  document.getElementById('stockModal').classList.remove('open');
+  document.body.style.overflow='';
+  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
+}
+document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStockModal();});
+
+async function fetchStockData(ticker,name){
+  try{
+    // Use Yahoo Finance v8 chart endpoint via a CORS proxy
+    const now=Math.floor(Date.now()/1000);
+    const threeYrsAgo=now-(3*365*24*60*60);
+    const twoYrsAgo=now-(2*365*24*60*60);
+
+    // Fetch 3yr daily prices for chart
+    const chartUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${threeYrsAgo}&period2=${now}&interval=1wk&includePrePost=false`;
+    const quoteUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${now-86400}&period2=${now}&interval=1d&includePrePost=false`;
+
+    const [chartRes,quoteRes]=await Promise.all([
+      fetch(chartUrl,{headers:{'User-Agent':'Mozilla/5.0'}}),
+      fetch(quoteUrl,{headers:{'User-Agent':'Mozilla/5.0'}})
+    ]);
+
+    if(!chartRes.ok)throw new Error('Market data unavailable (CORS or rate limit). Try opening directly on Yahoo Finance.');
+
+    const chartJson=await chartRes.json();
+    const result=chartJson?.chart?.result?.[0];
+    if(!result)throw new Error('No data returned for ticker '+ticker);
+
+    const meta=result.meta||{};
+    const timestamps=result.timestamp||[];
+    const quotes=result.indicators?.quote?.[0]||{};
+    const closes=quotes.close||[];
+
+    // Store full price data
+    currentPriceData={timestamps,closes,ticker,name};
+
+    // Build key stats from meta
+    const price=meta.regularMarketPrice||meta.previousClose||null;
+    const prevClose=meta.chartPreviousClose||meta.previousClose||null;
+    const chg=price&&prevClose?(price-prevClose):null;
+    const chgPct=chg&&prevClose?(chg/prevClose*100):null;
+    const hi52=meta.fiftyTwoWeekHigh||null;
+    const lo52=meta.fiftyTwoWeekLow||null;
+    const mktCap=meta.marketCap||null;
+    const currency=meta.currency||'USD';
+
+    // Quarterly financials — try v10 modules
+    let qData=null;
+    try{
+      const finUrl=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=incomeStatementHistoryQuarterly,balanceSheetHistoryQuarterly,defaultKeyStatistics,financialData,summaryDetail,price`;
+      const finRes=await fetch(finUrl,{headers:{'User-Agent':'Mozilla/5.0'}});
+      if(finRes.ok){
+        const finJson=await finRes.json();
+        qData=finJson?.quoteSummary?.result?.[0]||null;
+      }
+    }catch(e){}
+
+    renderStockModal({ticker,name,price,prevClose,chg,chgPct,hi52,lo52,mktCap,currency,meta,qData,timestamps,closes});
+
+  }catch(err){
+    document.getElementById('sModalBody').innerHTML=`
+      <div class="smodal-error">
+        <div style="font-size:24px;margin-bottom:.75rem;color:var(--dim)">⚠</div>
+        <div style="color:var(--text);margin-bottom:.5rem">Could not load live market data</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">${err.message}</div>
+        <a href="https://finance.yahoo.com/quote/${document.getElementById('sModalTicker').textContent.split('·')[0].trim()}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none;border:1px solid rgba(200,169,110,.3);padding:8px 16px;border-radius:var(--r);display:inline-block">Open on Yahoo Finance ↗</a>
+        <div style="margin-top:1rem;font-size:11px;color:var(--dim)">Yahoo Finance data may be blocked by browser security policies (CORS) when accessed from a local file. This works normally when hosted on GitHub Pages.</div>
+      </div>`;
+  }
+}
+
+function fmt$(v,scale=1e9){if(!v||isNaN(v))return'—';const n=v/scale;if(scale===1e12)return '$'+(n).toFixed(2)+'T';if(scale===1e9)return '$'+(n).toFixed(1)+'B';if(scale===1e6)return '$'+(n).toFixed(0)+'M';return '$'+v.toLocaleString();}
+function fmtN(v,d=2){return(v!=null&&!isNaN(v))?v.toFixed(d):'—';}
+function fmtPct(v){return(v!=null&&!isNaN(v))?v.toFixed(2)+'%':'—';}
+function colorClass(v){return v>0?'pos':v<0?'neg':'';}
+
+function renderStockModal({ticker,name,price,prevClose,chg,chgPct,hi52,lo52,mktCap,currency,meta,qData,timestamps,closes}){
+  const ks=qData?.defaultKeyStatistics||{};
+  const fd=qData?.financialData||{};
+  const sd=qData?.summaryDetail||{};
+  const priceData=qData?.price||{};
+
+  const entVal=ks.enterpriseValue?.raw||null;
+  const trailingPE=ks.trailingPE?.raw||null;
+  const fwdPE=ks.forwardPE?.raw||null;
+  const totalRev=fd.totalRevenue?.raw||null;
+  const grossProfit=fd.grossProfits?.raw||null;
+  const ebitda=fd.ebitda?.raw||null;
+  const netIncome=ks.netIncomeToCommon?.raw||null;
+  const divYield=sd.dividendYield?.raw||null;
+  const beta=ks.beta?.raw||sd.beta?.raw||null;
+  const shares=ks.sharesOutstanding?.raw||null;
+  const mktCapReal=priceData.marketCap?.raw||mktCap||null;
+
+  const changeSign=chg>0?'+':'';
+  const priceDisplay=price?`${currency} ${price.toFixed(2)}`:'—';
+  const chgDisplay=chg!=null?`${changeSign}${chg.toFixed(2)} (${changeSign}${chgPct?.toFixed(2)}%)`:'—';
+
+  // Build quarterly income table from qData
+  const qIncome=qData?.incomeStatementHistoryQuarterly?.incomeStatementHistory||[];
+  const qBalance=qData?.balanceSheetHistoryQuarterly?.balanceSheetStatements||[];
+
+  let qTableHTML='';
+  if(qIncome.length>0){
+    const rows=qIncome.slice(0,8).reverse();
+    qTableHTML=`
+    <div class="chart-section">
+      <div class="chart-section-title">Quarterly Financials (last 8 quarters)</div>
+      <div class="qtable-wrap"><table class="qtable">
+        <thead><tr>
+          <th>Quarter</th>
+          <th>Revenue</th>
+          <th>Gross Profit</th>
+          <th>EBITDA</th>
+          <th>Net Income</th>
+        </tr></thead>
+        <tbody>${rows.map(q=>{
+          const d=new Date(q.endDate?.raw*1000);
+          const qLabel=`Q${Math.ceil((d.getMonth()+1)/3)} ${d.getFullYear()}`;
+          const rev=q.totalRevenue?.raw;
+          const gp=q.grossProfit?.raw;
+          const ni=q.netIncome?.raw;
+          const eb=q.ebitda?.raw;
+          const niClass=ni>0?'val-pos':ni<0?'val-neg':'';
+          return`<tr>
+            <td>${qLabel}</td>
+            <td>${rev?'$'+(rev/1e6).toFixed(0)+'M':'—'}</td>
+            <td>${gp?'$'+(gp/1e6).toFixed(0)+'M':'—'}</td>
+            <td>${eb?'$'+(eb/1e6).toFixed(0)+'M':'—'}</td>
+            <td class="${niClass}">${ni?'$'+(ni/1e6).toFixed(0)+'M':'—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+  }
+
+  document.getElementById('sModalBody').innerHTML=`
+    <div class="kstats">
+      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val">${priceDisplay}</div><div class="kstat-sub ${colorClass(chg)}">${chgDisplay}</div></div>
+      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmt$(mktCapReal,mktCapReal>1e12?1e12:1e9)}</div><div class="kstat-sub">${shares?((shares/1e6).toFixed(0)+'M shares'):''}</div></div>
+      <div class="kstat"><div class="kstat-label">Enterprise Value</div><div class="kstat-val">${fmt$(entVal,entVal&&entVal>1e12?1e12:1e9)}</div><div class="kstat-sub">EV incl. debt</div></div>
+      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">${lo52?lo52.toFixed(2):'—'} – ${hi52?hi52.toFixed(2):'—'}</div><div class="kstat-sub">${currency}</div></div>
+      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${fmtN(trailingPE,1)}</div><div class="kstat-sub">Trailing TTM</div></div>
+      <div class="kstat"><div class="kstat-label">Fwd P/E</div><div class="kstat-val">${fmtN(fwdPE,1)}</div><div class="kstat-sub">Forward est.</div></div>
+      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmt$(totalRev,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">EBITDA (TTM)</div><div class="kstat-val">${fmt$(ebitda,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">Net Income (TTM)</div><div class="kstat-val ${netIncome>0?'pos':netIncome<0?'neg':''}">${fmt$(netIncome,1e9)}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">Div. Yield</div><div class="kstat-val">${divYield?(divYield*100).toFixed(2)+'%':'—'}</div><div class="kstat-sub">Annual</div></div>
+      <div class="kstat"><div class="kstat-label">Beta (5yr)</div><div class="kstat-val">${fmtN(beta,2)}</div><div class="kstat-sub">vs S&P 500</div></div>
+    </div>
+
+    <div class="chart-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <div class="chart-section-title">Stock Price — 3 Year History</div>
+        <div class="chart-period-btns">
+          <button class="period-btn active" onclick="setChartPeriod(this,1)">1yr</button>
+          <button class="period-btn" onclick="setChartPeriod(this,2)">2yr</button>
+          <button class="period-btn active" onclick="setChartPeriod(this,3)">3yr</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="stockChart"></canvas></div>
+    </div>
+
+    ${qTableHTML}
+
+    <div class="smodal-disclaimer">
+      Data sourced from Yahoo Finance. Stock prices may be delayed up to 15 minutes. Financial figures are in ${currency} unless otherwise stated. Revenue, EBITDA, and net income are trailing twelve-month (TTM) unless noted. Enterprise value includes total debt and minority interest minus cash. Not investment advice.
+      <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#a8bce8;margin-left:8px;text-decoration:none">View full profile on Yahoo Finance ↗</a>
+    </div>`;
+
+  // Draw the stock chart
+  drawStockChart(timestamps,closes,3);
+  // Set 3yr button active
+  document.querySelectorAll('.period-btn').forEach(b=>{b.classList.toggle('active',b.textContent==='3yr');});
+}
+
+function setChartPeriod(btn,years){
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawStockChart(currentPriceData.timestamps,currentPriceData.closes,years);
+}
+
+function drawStockChart(timestamps,closes,years){
+  if(!timestamps||!closes)return;
+  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
+  const now=Date.now()/1000;
+  const cutoff=now-(years*365*24*60*60);
+  const filtered=[];
+  timestamps.forEach((t,i)=>{if(t>=cutoff&&closes[i]!=null)filtered.push({t,c:closes[i]});});
+  if(!filtered.length)return;
+  const labels=filtered.map(d=>{const dt=new Date(d.t*1000);return dt.toLocaleDateString('en-US',{month:'short',year:'2-digit'});});
+  const data=filtered.map(d=>d.c);
+  const first=data[0];const last=data[data.length-1];
+  const up=last>=first;
+  const lineColor=up?'#7eb8a4':'#e07070';
+  const ctx=document.getElementById('stockChart').getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,200);
+  grad.addColorStop(0,up?'rgba(126,184,164,0.25)':'rgba(224,112,112,0.25)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  stockChartInst=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data,borderColor:lineColor,backgroundColor:grad,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:lineColor,fill:true,tension:0.2}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(26,30,41,0.95)',
+          titleColor:'#e8eaf0',
+          bodyColor:'#e8eaf0',
+          borderColor:'rgba(255,255,255,0.13)',
+          borderWidth:1,
+          padding:10,
+          callbacks:{label:ctx=>`$${ctx.parsed.y.toFixed(2)}`}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7080',font:{size:10},maxTicksLimit:8}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7080',font:{size:10},callback:v=>'$'+v.toFixed(0)},position:'right'}
+      }
+    }
+  });
+}
+
+/* ═══════════════════════ SECTOR COLORS ═══════════════════════ */
+const COLORS={"Software & Services":"#7eb8a4","Technology":"#7eb8a4","Healthcare":"#8b9fd4","Pharma/Biotech":"#a89fd4","Financial Services":"#c8a96e","Business Services":"#d4a86a","Consumer Products":"#c96e6e","Industrials":"#7a9cb0","Infrastructure":"#5a8a9e","Real Assets":"#6b9e8a","Energy":"#b0a45a","Media & Entertainment":"#b07a9e","IT Services":"#90b4c8","Hotels/Leisure":"#b4906e","Automobiles":"#8a8a6e","Aerospace & Defense":"#7a9070","Insurance":"#9aad8a","Real Estate":"#ad9a7a","Other":"#3a3f52"};
+function sc(s){return COLORS[s]||"#4a5060";}
+
+/* ═══════════════════════ AGG ═══════════════════════ */
+let aggSelected=new Set(funds.map(f=>f.id));
+let c1=null,c2=null;
+function buildAgg(withEst){
+  const tot={};let grand=0;
+  funds.forEach(f=>{
+    if(!aggSelected.has(f.id))return;
+    const src=withEst?(f.estimated||f.confirmed||null):(f.confirmed||null);
+    if(!src)return;
+    const aum=f.aum_b||0;
+    Object.entries(src).forEach(([s,p])=>{const a=aum*(p/100);tot[s]=(tot[s]||0)+a;grand+=a;});
+  });
+  let entries=Object.entries(tot).sort((a,b)=>b[1]-a[1]);
+  const oi=entries.findIndex(e=>e[0]==='Other');
+  if(oi>0){const[o]=entries.splice(oi,1);entries.push(o);}
+  return{entries,grand};
+}
+function drawDonut(cid,lid,vid,withEst){
+  const{entries,grand}=buildAgg(withEst);
+  document.getElementById(vid).textContent='$'+grand.toFixed(0)+'B';
+  const ex=withEst?c2:c1;if(ex)ex.destroy();
+  const ctx=document.getElementById(cid).getContext('2d');
+  const inst=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:entries.map(e=>e[0]),datasets:[{data:entries.map(e=>e[1]),backgroundColor:entries.map(e=>sc(e[0])),borderColor:'#0d0f14',borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'64%',animation:{duration:700,easing:'easeInOutCubic'},
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      onHover:(ev,els)=>{
+        const tt=document.getElementById('tooltip');
+        if(!els.length){tt.style.display='none';document.querySelectorAll('#'+lid+' .leg-row').forEach(r=>r.classList.remove('faded'));return;}
+        const i=els[0].index;const nm=entries[i][0];const am=entries[i][1];const pct=(am/grand*100).toFixed(1);
+        document.getElementById('tt-name').textContent=nm;
+        document.getElementById('tt-pct').textContent=pct+'%';
+        document.getElementById('tt-amt').textContent='~$'+am.toFixed(1)+'B allocated';
+        tt.style.display='block';
+        tt.style.left=(ev.native.clientX+14)+'px';tt.style.top=(ev.native.clientY-10)+'px';
+        document.querySelectorAll('#'+lid+' .leg-row').forEach((r,idx)=>r.classList.toggle('faded',entries[idx]&&entries[idx][0]!==nm));
+      }
+    }
+  });
+  if(withEst)c2=inst;else c1=inst;
+  buildLegend(lid,entries,grand);
+}
+function buildLegend(lid,entries,grand){
+  document.getElementById(lid).innerHTML=entries.map(([s,v])=>`<div class="leg-row" onmouseenter="hlSec('${lid}','${s}')" onmouseleave="unhlSec('${lid}')">
+    <div class="leg-swatch" style="background:${sc(s)}"></div>
+    <span class="leg-name">${s}</span>
+    <span class="leg-pct">${(v/grand*100).toFixed(1)}%</span>
+    <span class="leg-amt">$${v.toFixed(1)}B</span>
+  </div>`).join('');
+}
+function hlSec(lid,s){
+  const inst=lid==='legend1'?c1:c2;if(!inst)return;
+  inst.getDatasetMeta(0).data.forEach((a,i)=>{a.options.offset=inst.data.labels[i]===s?14:0;});
+  inst.update('none');
+  document.querySelectorAll('#'+lid+' .leg-row').forEach((r,i)=>r.classList.toggle('faded',inst.data.labels[i]!==s));
+}
+function unhlSec(lid){
+  const inst=lid==='legend1'?c1:c2;if(!inst)return;
+  inst.getDatasetMeta(0).data.forEach(a=>{a.options.offset=0;});inst.update('none');
+  document.querySelectorAll('#'+lid+' .leg-row').forEach(r=>r.classList.remove('faded'));
+  document.getElementById('tooltip').style.display='none';
+}
+document.addEventListener('mousemove',e=>{const tt=document.getElementById('tooltip');if(tt.style.display==='block'){tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';}});
+
+function renderAggSummary(){
+  const cf=funds.filter(f=>aggSelected.has(f.id)&&f.confirmed);
+  const af=funds.filter(f=>aggSelected.has(f.id));
+  const cAUM=cf.reduce((a,f)=>a+(f.aum_b||0),0);
+  const tAUM=af.reduce((a,f)=>a+(f.aum_b||0),0);
+  document.getElementById('aggSummary').innerHTML=`
+    <div class="agg-metric"><div class="agg-metric-label">Funds included</div><div class="agg-metric-val">${af.length}</div><div class="agg-metric-sub">${af.filter(f=>f.type==='PE').length} PE · ${af.filter(f=>f.type==='PC').length} PC</div></div>
+    <div class="agg-metric"><div class="agg-metric-label">Confirmed AUM</div><div class="agg-metric-val" style="color:var(--success)">~$${cAUM.toFixed(0)}B</div><div class="agg-metric-sub">SEC-verified</div></div>
+    <div class="agg-metric"><div class="agg-metric-label">Total Est. AUM</div><div class="agg-metric-val" style="color:var(--accent)">~$${tAUM.toFixed(0)}B</div><div class="agg-metric-sub">Confirmed + est.</div></div>
+    <div class="agg-metric"><div class="agg-metric-label">Coverage</div><div class="agg-metric-val">${tAUM?Math.round(cAUM/tAUM*100):0}%</div><div class="agg-metric-sub">Confirmed / total</div></div>`;
+}
+function renderAggFilters(){
+  document.getElementById('aggFundFilters').innerHTML=
+    `<button class="filter-btn active" onclick="aggAll()">All Funds</button>`+
+    `<button class="filter-btn" onclick="aggByType('PE')">PE Only</button>`+
+    `<button class="filter-btn" onclick="aggByType('PC')">PC Only</button>`+
+    `<div class="vdiv"></div>`+
+    funds.map(f=>`<button class="filter-btn${aggSelected.has(f.id)?' active':''}" id="aggbtn-${f.id}" onclick="aggToggle('${f.id}')" style="font-size:11px;padding:4px 9px">${f.firm.split('(')[0].replace('The ','').trim()}</button>`).join('');
+}
+function aggToggle(id){aggSelected.has(id)?aggSelected.delete(id):aggSelected.add(id);document.getElementById('aggbtn-'+id)?.classList.toggle('active',aggSelected.has(id));rebuildAgg();}
+function aggAll(){aggSelected=new Set(funds.map(f=>f.id));renderAggFilters();rebuildAgg();}
+function aggByType(t){aggSelected=new Set(funds.filter(f=>f.type===t).map(f=>f.id));renderAggFilters();rebuildAgg();}
+function rebuildAgg(){renderAggSummary();drawDonut('chart1','legend1','c1val',false);drawDonut('chart2','legend2','c2val',true);}
+
+/* ═══════════════════════ FUND DIRECTORY ═══════════════════════ */
+let aType='all',aAccess='all';
+function ab(a){return a==='Public'?'<span class="badge badge-public">Public</span>':a==='Partial'?'<span class="badge badge-partial">Partial</span>':'<span class="badge badge-restricted">Restricted</span>';}
+function tb(t){return t==='PE'?'<span class="badge badge-pe">PE</span>':'<span class="badge badge-pc">PC</span>';}
+function stockPill(f){
+  if(!f.parentTicker)return'';
+  return`<button class="stock-link" onclick="openStockModal('${f.id}')"><span class="stock-link-dot"></span>${f.parentTicker} · Live Data ↗</button>`;
+}
+function getFiltered(){const q=document.getElementById('search').value.toLowerCase();return funds.filter(f=>{if(aType!=='all'&&f.type!==aType)return false;if(aAccess!=='all'&&f.access!==aAccess)return false;if(q&&!f.firm.toLowerCase().includes(q)&&!f.sectors.toLowerCase().includes(q))return false;return true;});}
+function renderFunds(){
+  const fil=getFiltered();const g=document.getElementById('cardsGrid');
+  document.getElementById('countBadge').textContent=`${fil.length} of ${funds.length} funds`;
+  if(!fil.length){g.style.display='none';document.getElementById('emptyState').style.display='block';return;}
+  g.style.display='grid';document.getElementById('emptyState').style.display='none';
+  g.innerHTML=fil.map(f=>`<div class="fund-card">
+    <div class="card-top"><div>
+      <div class="card-firm">${f.firm}</div>
+      <a class="card-website" href="${f.website}" target="_blank">${f.website.replace('https://','')}</a>
+      ${stockPill(f)}
+    </div>
+    <div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
+    <div class="card-meta">
+      <div class="card-meta-item"><span class="card-meta-label">AUM</span><span class="card-meta-val">${f.aum}</span></div>
+      <div class="card-meta-item"><span class="card-meta-label">Fund / IR Page</span><span class="card-meta-val"><a href="${f.fundPage}" target="_blank">${f.fundLabel} ↗</a></span></div>
+      ${f.ticker&&f.ticker!=='N/A'?`<div class="card-meta-item"><span class="card-meta-label">Fund Ticker</span><span class="card-meta-val">${f.ticker}</span></div>`:''}
+    </div>
+    <div class="card-sectors">${f.sectors}<div class="card-date">Data: ${f.dataDate}</div></div>
+  </div>`).join('');
+}
+document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-type]').forEach(x=>x.classList.remove('active'));b.classList.add('active');aType=b.dataset.type;renderFunds();}));
+document.querySelectorAll('[data-access]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-access]').forEach(x=>x.classList.remove('active'));b.classList.add('active');aAccess=b.dataset.access;renderFunds();}));
+document.getElementById('search').addEventListener('input',renderFunds);
+
+/* ═══════════════════════ PERFORMANCE ═══════════════════════ */
+function renderPerformance(){
+  document.getElementById('perfGrid').innerHTML=funds.map(f=>{
+    const p=f.perf;const pill=f.parentTicker?`<button class="stock-link" onclick="openStockModal('${f.id}')" style="margin-top:4px"><span class="stock-link-dot"></span>${f.parentTicker} · Live Data ↗</button>`:'';
+    if(f.access==='Restricted'&&!p.divYield)return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${pill}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div><div style="font-size:12px;color:var(--muted);padding:.5rem 0">Performance data available to institutional LPs only.</div><div class="perf-note">${p.totalReturnEst?'Est. return: <strong style="color:var(--accent)">'+p.totalReturnEst+'</strong>':''}<div class="perf-source">${p.dataSource}</div></div></div>`;
+    return`<div class="perf-card"><div class="perf-top"><div><div class="perf-firm">${f.firm}</div><div class="perf-ticker">${f.ticker}</div>${pill}</div><div class="badges">${tb(f.type)}${ab(f.access)}</div></div>
+    <div class="perf-metrics">
+      <div class="pm"><span class="pm-label">NAV/Share</span><span class="pm-val neu">${p.navPS?'$'+p.navPS.toFixed(2):'N/A'}</span><span class="pm-sub">latest qtr</span></div>
+      <div class="pm"><span class="pm-label">Div. Yield</span><span class="pm-val pos">${p.divYield?p.divYield.toFixed(1)+'%':'N/A'}</span><span class="pm-sub">${p.divQtr?'$'+p.divQtr+'/qtr':'ann.'}</span></div>
+      <div class="pm"><span class="pm-label">NII/Share</span><span class="pm-val">${p.niiPS?'$'+p.niiPS.toFixed(2):'N/A'}</span><span class="pm-sub">quarterly</span></div>
+      <div class="pm"><span class="pm-label">Est. Return</span><span class="pm-val neu" style="font-size:12px">${p.totalReturnEst||'N/A'}</span><span class="pm-sub">ann. gross</span></div>
+      <div class="pm"><span class="pm-label">Leverage</span><span class="pm-val">${p.leverage||'N/A'}</span><span class="pm-sub">D/E or LTV</span></div>
+      <div class="pm"><span class="pm-label">Non-Accrual</span><span class="pm-val ${p.nonAccrualPct!=null&&p.nonAccrualPct>2?'neg':p.nonAccrualPct!=null?'pos':''}">${p.nonAccrualPct!=null?p.nonAccrualPct+'%':'N/A'}</span><span class="pm-sub">at fair value</span></div>
+    </div>
+    ${p.divYield?`<div class="perf-bar-wrap"><div class="perf-bar-label"><span>Div. yield</span><span>${p.divYield.toFixed(1)}%</span></div><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(p.divYield/16*100,100)}%;background:var(--success)"></div></div></div>`:''}
+    ${p.floatPct!=null?`<div class="perf-bar-wrap"><div class="perf-bar-label"><span>Floating rate</span><span>${p.floatPct}%</span></div><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${p.floatPct}%;background:#a8bce8"></div></div></div>`:''}
+    <div class="perf-note"><div class="perf-source">Source: ${p.dataSource}</div></div></div>`;
+  }).join('');
+}
+
+/* ═══════════════════════ COMPARE ═══════════════════════ */
+let cmpSel=new Set();
+function renderChips(){
+  document.getElementById('compareChips').innerHTML=funds.map(f=>{const s=cmpSel.has(f.id);const d=!s&&cmpSel.size>=5;return`<button class="chip${s?' selected':''}${d?' disabled':''}" onclick="togCmp('${f.id}')" ${d?'disabled':''}>${f.firm}</button>`;}).join('');
+  document.getElementById('compareHint').textContent=cmpSel.size<2?`Select at least 2 funds. (${cmpSel.size} selected)`:`${cmpSel.size} funds selected.`;
+  renderCmpTable();
+}
+function togCmp(id){cmpSel.has(id)?cmpSel.delete(id):cmpSel.size<5&&cmpSel.add(id);renderChips();}
+function renderCmpTable(){
+  const wrap=document.getElementById('compareTableWrap');
+  if(cmpSel.size<2){wrap.innerHTML='<div class="compare-empty">Select at least 2 funds above.</div>';return;}
+  const sel=funds.filter(f=>cmpSel.has(f.id));
+  const rows=[
+    {l:'Type',fn:f=>tb(f.type)},{l:'AUM',fn:f=>`<span style="font-size:12px;color:var(--text)">${f.aum}</span>`},{l:'Access',fn:f=>ab(f.access)},
+    {l:'Ticker',fn:f=>`<span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text)">${f.ticker||'—'}</span>`},
+    {l:'Live Data',fn:f=>f.parentTicker?`<button class="stock-link" onclick="openStockModal('${f.id}')">${f.parentTicker} ↗</button>`:`<span class="cell-na">N/A</span>`},
+    {l:'NAV/Share',fn:f=>f.perf.navPS?`<span class="cell-good">$${f.perf.navPS.toFixed(2)}</span>`:`<span class="cell-na">N/A</span>`},
+    {l:'Div. Yield',fn:f=>f.perf.divYield?`<span class="cell-good">${f.perf.divYield.toFixed(1)}%</span>`:`<span class="cell-na">N/A</span>`},
+    {l:'Qtr Dividend',fn:f=>f.perf.divQtr?`<span style="color:var(--text)">$${f.perf.divQtr}/sh</span>`:`<span class="cell-na">—</span>`},
+    {l:'NII/Share',fn:f=>f.perf.niiPS?`<span style="color:var(--text)">$${f.perf.niiPS.toFixed(2)}</span>`:`<span class="cell-na">—</span>`},
+    {l:'Est. Return',fn:f=>`<span style="color:var(--accent);font-size:12px">${f.perf.totalReturnEst||'—'}</span>`},
+    {l:'Leverage',fn:f=>`<span style="color:var(--text)">${f.perf.leverage||'—'}</span>`},
+    {l:'Float Rate',fn:f=>f.perf.floatPct!=null?`<span style="color:var(--text)">${f.perf.floatPct}%</span>`:`<span class="cell-na">—</span>`},
+    {l:'Non-Accrual',fn:f=>f.perf.nonAccrualPct!=null?`<span class="${f.perf.nonAccrualPct>2?'cell-bad':'cell-good'}">${f.perf.nonAccrualPct}%</span>`:`<span class="cell-na">—</span>`},
+    {l:'Top Sectors',fn:f=>`<div style="font-size:11px;color:var(--muted);line-height:1.5">${f.sectors.substring(0,110)}…</div>`},
+    {l:'Data As Of',fn:f=>`<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${f.dataDate}</span>`},
+    {l:'Fund Page',fn:f=>`<a href="${f.fundPage}" target="_blank" style="color:#a8bce8;font-size:12px;text-decoration:none">${f.fundLabel} ↗</a>`},
+  ];
+  wrap.innerHTML=`<div class="compare-table-wrap"><table class="ctable"><thead><tr><th>Metric</th>${sel.map(f=>`<th style="color:var(--text)">${f.firm}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td>${r.l}</td>${sel.map(f=>`<td>${r.fn(f)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ═══════════════════════ TABS ═══════════════════════ */
+function showTab(name,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');
+  if(name==='aggregation'){setTimeout(()=>{renderAggFilters();renderAggSummary();drawDonut('chart1','legend1','c1val',false);drawDonut('chart2','legend2','c2val',true);},60);}
+}
+
+/* ═══════════════════════ INIT ═══════════════════════ */
+function init(){
+  document.getElementById('lastUpdated').textContent=`Updated: ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  const pe=funds.filter(f=>f.type==='PE').length,pc=funds.filter(f=>f.type==='PC').length;
+  const pub=funds.filter(f=>f.access==='Public').length,par=funds.filter(f=>f.access==='Partial').length,res=funds.filter(f=>f.access==='Restricted').length;
+  document.getElementById('heroStats').innerHTML=`
+    <div class="stat"><span class="stat-num">${funds.length}</span><span class="stat-label">Funds</span></div>
+    <div class="stat"><span class="stat-num" style="color:var(--pe)">${pe}</span><span class="stat-label">Private Equity</span></div>
+    <div class="stat"><span class="stat-num" style="color:var(--pc)">${pc}</span><span class="stat-label">Private Credit</span></div>
+    <div class="stat"><span class="stat-num" style="color:var(--success)">${pub}</span><span class="stat-label">Public</span></div>
+    <div class="stat"><span class="stat-num" style="color:var(--warn)">${par}</span><span class="stat-label">Partial</span></div>
+    <div class="stat"><span class="stat-num" style="color:var(--danger)">${res}</span><span class="stat-label">Restricted</span></div>`;
+  renderFunds();renderPerformance();renderChips();
+}
+if(sessionStorage.getItem('fi_auth')==='1')init();
+</script>
+</body>
+</html>
