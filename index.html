@@ -292,8 +292,8 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 <!-- API KEY BANNER -->
 <div id="apiBanner" style="display:none;padding:.75rem 2rem;border-bottom:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.06)">
   <div style="max-width:1600px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free Alpha Vantage API key to enable the stock data modal. Get one free at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:#a8bce8;text-decoration:none">alphavantage.co ↗</a> (takes 2 min, no credit card).</div>
-    <input type="text" id="apiKeyInput" placeholder="Paste your Alpha Vantage API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
+    <div style="font-size:12px;color:var(--muted);flex:1;min-width:200px"><strong style="color:var(--accent)">Live Stock Data:</strong> Enter your free Finnhub API key to enable the stock data modal. Get one free at <a href="https://finnhub.io" target="_blank" style="color:#a8bce8;text-decoration:none">finnhub.io ↗</a> (takes 2 min, no credit card).</div>
+    <input type="text" id="apiKeyInput" placeholder="Paste your Finnhub API key here…" style="width:260px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" />
     <button onclick="saveApiKey()" style="padding:6px 14px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;white-space:nowrap">Save Key</button>
     <button onclick="dismissBanner()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px">×</button>
   </div>
@@ -399,7 +399,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;background:var(--s
 
 <footer>
   <div class="footer-inner">
-    <p class="footer-note">Fund data from SEC EDGAR filings, fund fact sheets, and public investor letters. Live stock data via Alpha Vantage (NASDAQ licensed) — end-of-day pricing, 25 req/day free tier. Portfolio compositions change quarterly. Not investment advice.</p>
+    <p class="footer-note">Fund data from SEC EDGAR filings, fund fact sheets, and public investor letters. Live stock data via Finnhub — real-time US quotes, 60 req/min free tier. Portfolio compositions change quarterly. Not investment advice.</p>
     <span class="footer-stamp">FundIntel · v4.1 · March 2026</span>
   </div>
 </footer>
@@ -420,210 +420,235 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
 function signOut(){sessionStorage.removeItem('fi_auth');document.getElementById('gate').style.display='flex';document.getElementById('app').style.display='none';}
 if(sessionStorage.getItem('fi_auth')==='1'){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';}
 
-/* ═══════════════ ALPHA VANTAGE API KEY ═══════════════ */
-// ── IMPORTANT: Replace the empty string below with your Alpha Vantage API key.
-// ── Get a free key at: https://www.alphavantage.co/support/#api-key
-const HARDCODED_API_KEY = "d7081i9r01qtb4r9r9m0d7081i9r01qtb4r9r9mg";   // e.g. "ABCDEF123456"
+/* ═══════════════ FINNHUB API KEY ═══════════════ */
+// ── Replace the empty string below with your Finnhub API key.
+// ── Get a free key at: https://finnhub.io  (takes 2 min, no credit card)
+const HARDCODED_API_KEY = "d7081i9r01qtb4r9r9m0d7081i9r01qtb4r9r9mg";   // e.g. "abc123def456yourkey"
 
-let avKey = HARDCODED_API_KEY || localStorage.getItem('av_api_key') || "";
-const AV = "https://www.alphavantage.co/query";
+let fhKey = HARDCODED_API_KEY || localStorage.getItem('fh_api_key') || "";
+const FH  = "https://finnhub.io/api/v1";
 
-// In-session cache so reopening the same ticker costs 0 extra requests
-const avCache = {};
+// In-session cache — reopening the same ticker costs zero extra API calls
+const fhCache = {};
 
 function saveApiKey(){
-  const v=document.getElementById('apiKeyInput').value.trim();
-  if(!v){alert('Please paste a valid API key first.');return;}
-  avKey=v;
-  localStorage.setItem('av_api_key',v);
-  document.getElementById('apiBanner').style.display='none';
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if(!v){ alert('Please paste a valid API key first.'); return; }
+  fhKey = v;
+  localStorage.setItem('fh_api_key', v);
+  document.getElementById('apiBanner').style.display = 'none';
   showToastMsg('API key saved. Stock data is now enabled.');
 }
-function dismissBanner(){document.getElementById('apiBanner').style.display='none';}
+function dismissBanner(){ document.getElementById('apiBanner').style.display = 'none'; }
 
 function showToastMsg(msg){
-  const t=document.createElement('div');
-  t.textContent=msg;
-  t.style.cssText='position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 20px;font-size:13px;color:var(--text);z-index:9000;white-space:nowrap';
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 20px;font-size:13px;color:var(--text);z-index:9000;white-space:nowrap';
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
+  setTimeout(() => t.remove(), 3000);
 }
 
 function initBanner(){
-  var banner=document.getElementById('apiBanner');
-  if(avKey){banner.style.display='none';}
-  else{banner.style.display='block';var inp=document.getElementById('apiKeyInput');if(inp)inp.value='';}
+  const banner = document.getElementById('apiBanner');
+  if(fhKey){ banner.style.display = 'none'; }
+  else { banner.style.display = 'block'; const inp = document.getElementById('apiKeyInput'); if(inp) inp.value = ''; }
 }
 
 /* ═══════════════ STOCK MODAL ═══════════════ */
-let stockChartInst=null;
-let priceHistory=[];
+let stockChartInst = null;
+let priceHistory   = [];
 
 function openStockModal(fundId){
-  const f=funds.find(x=>x.id===fundId);
-  if(!f||!f.parentTicker)return;
-  if(!avKey){
-    document.getElementById('apiBanner').style.display='block';
-    showToastMsg('Please enter your Alpha Vantage API key first (see banner above).');
+  const f = funds.find(x => x.id === fundId);
+  if(!f || !f.parentTicker) return;
+  if(!fhKey){
+    document.getElementById('apiBanner').style.display = 'block';
+    showToastMsg('Please enter your Finnhub API key first (see banner above).');
     return;
   }
-  document.getElementById('sModalName').textContent=f.parentName||f.firm;
-  document.getElementById('sModalTicker').textContent=f.parentTicker+' · Parent Company';
-  document.getElementById('sModalBody').innerHTML=`<div class="smodal-loading">Fetching live data for <strong style="color:var(--accent)">${f.parentTicker}</strong>…<br><span style="font-size:11px;color:var(--dim)">Connecting to Alpha Vantage</span></div>`;
+  document.getElementById('sModalName').textContent    = f.parentName || f.firm;
+  document.getElementById('sModalTicker').textContent  = f.parentTicker + ' · Parent Company';
+  document.getElementById('sModalBody').innerHTML = `<div class="smodal-loading">Fetching live data for <strong style="color:var(--accent)">${f.parentTicker}</strong>…<br><span style="font-size:11px;color:var(--dim)">Connecting to Finnhub</span></div>`;
   document.getElementById('stockModal').classList.add('open');
-  document.body.style.overflow='hidden';
-  fetchAVData(f.parentTicker, f.parentName||f.firm);
+  document.body.style.overflow = 'hidden';
+  fetchFinnhubData(f.parentTicker, f.parentName || f.firm);
 }
 
 function closeStockModal(){
   document.getElementById('stockModal').classList.remove('open');
-  document.body.style.overflow='';
-  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
+  document.body.style.overflow = '';
+  if(stockChartInst){ stockChartInst.destroy(); stockChartInst = null; }
 }
-document.getElementById('stockModal').addEventListener('click',e=>{if(e.target===document.getElementById('stockModal'))closeStockModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStockModal();});
+document.getElementById('stockModal').addEventListener('click', e => { if(e.target === document.getElementById('stockModal')) closeStockModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeStockModal(); });
 
-async function avFetch(params){
-  const url=AV+'?'+new URLSearchParams({...params,apikey:avKey});
-  const res=await fetch(url);
-  if(!res.ok) throw new Error('API responded '+res.status+'. Check your API key.');
-  const data=await res.json();
-  if(data['Error Message']) throw new Error(data['Error Message']);
-  if(data['Information']) throw new Error('Rate limit reached. Alpha Vantage free tier allows 25 requests/day. Please try again tomorrow.');
+/* ── Finnhub fetch helper ── */
+async function fhFetch(path, params = {}){
+  const url = FH + path + '?' + new URLSearchParams({ ...params, token: fhKey });
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Finnhub responded ' + res.status + '. Check your API key at finnhub.io');
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
   return data;
 }
 
-async function fetchAVData(ticker, name){
+/* ── Unix timestamp helpers ── */
+function nowTs(){ return Math.floor(Date.now() / 1000); }
+function yearsAgoTs(y){ return Math.floor((Date.now() - y * 365.25 * 24 * 3600 * 1000) / 1000); }
+function fmtDate(ts){ return new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }); }
+
+/* ── Number formatters ── */
+function fmtB(v){
+  if(v == null || v === '' || isNaN(v)) return '—';
+  const n = Math.abs(Number(v));
+  if(n >= 1e12) return '$' + (Number(v)/1e12).toFixed(2) + 'T';
+  if(n >= 1e9)  return '$' + (Number(v)/1e9).toFixed(1)  + 'B';
+  if(n >= 1e6)  return '$' + (Number(v)/1e6).toFixed(0)  + 'M';
+  return '$' + Number(v).toLocaleString();
+}
+function fmtNum(v, d = 2){
+  if(v == null || v === '' || isNaN(v)) return '—';
+  return Number(v).toFixed(d);
+}
+function fmtDollar(v){ return (v != null && !isNaN(v)) ? fmtB(v) : '—'; }
+
+/* ── Main data fetch ── */
+async function fetchFinnhubData(ticker, name){
   try{
-    // Use cache to avoid burning daily requests on repeated opens
-    if(avCache[ticker]){
-      const c=avCache[ticker];
-      priceHistory=c.priceHistory;
-      renderStockModal(c.overview, c.quote, c.priceHistory, c.income, ticker);
+    // Serve from cache if already fetched this session
+    if(fhCache[ticker]){
+      const c = fhCache[ticker];
+      priceHistory = c.priceHistory;
+      renderStockModal(c.quote, c.profile, c.metrics, c.priceHistory, c.income, ticker);
       return;
     }
 
-    // Sequential fetches — AV free tier allows 5 req/min so we space them
-    const overview = await avFetch({function:'OVERVIEW', symbol:ticker});
-    await delay(300);
-    const quoteData = await avFetch({function:'GLOBAL_QUOTE', symbol:ticker});
-    await delay(300);
-    const dailyData = await avFetch({function:'TIME_SERIES_DAILY', symbol:ticker, outputsize:'full'});
-    await delay(300);
-    const incomeData = await avFetch({function:'INCOME_STATEMENT', symbol:ticker});
+    // Fetch all four endpoints in parallel — Finnhub allows 60 req/min so this is fine
+    const threeYrsAgo = yearsAgoTs(3);
+    const now         = nowTs();
 
-    const quote = quoteData['Global Quote']||{};
-    const timeSeries = dailyData['Time Series (Daily)']||{};
+    const [quote, profile, metrics, candles, income] = await Promise.all([
+      fhFetch('/quote',              { symbol: ticker }),
+      fhFetch('/stock/profile2',     { symbol: ticker }),
+      fhFetch('/stock/metric',       { symbol: ticker, metric: 'all' }),
+      fhFetch('/stock/candle',       { symbol: ticker, resolution: 'W', from: threeYrsAgo, to: now }),
+      fhFetch('/stock/financials-reported', { symbol: ticker, freq: 'quarterly' })
+    ]);
 
-    // Convert daily time series to sorted array
-    const history = Object.entries(timeSeries)
-      .map(([date,v])=>({date, close:parseFloat(v['4. close'])}))
-      .sort((a,b)=>a.date.localeCompare(b.date));
+    if(!quote || quote.c == null) throw new Error('No data returned for ' + ticker + '. Ticker may not be supported on the free tier.');
 
-    // Quarterly income — AV returns annualReports and quarterlyReports
-    const income = (incomeData.quarterlyReports||[]).slice(0,8);
+    // Build sorted price history from candle data
+    const history = (candles.s === 'ok' && candles.t)
+      ? candles.t.map((ts, i) => ({ date: ts, close: candles.c[i] })).sort((a, b) => a.date - b.date)
+      : [];
 
     priceHistory = history;
+    fhCache[ticker] = { quote, profile, metrics, priceHistory: history, income };
 
-    // Cache result
-    avCache[ticker]={overview, quote, priceHistory:history, income};
-
-    renderStockModal(overview, quote, history, income, ticker);
+    renderStockModal(quote, profile, metrics, history, income, ticker);
 
   } catch(err){
-    document.getElementById('sModalBody').innerHTML=`
+    document.getElementById('sModalBody').innerHTML = `
       <div class="smodal-error">
         <div style="font-size:28px;color:var(--dim);margin-bottom:.75rem">⚠</div>
         <div style="font-size:14px;color:var(--text);margin-bottom:.5rem">Could not load market data</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:1.5rem;max-width:420px;margin-left:auto;margin-right:auto;line-height:1.7">${err.message}</div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
           <button onclick="document.getElementById('apiBanner').style.display='block';closeStockModal();" style="padding:8px 16px;background:var(--accent);border:none;border-radius:var(--r);color:#0d0f14;font-size:12px;font-weight:600;cursor:pointer">Update API Key</button>
-          <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;text-decoration:none;display:inline-flex;align-items:center">Get Free Key ↗</a>
+          <a href="https://finnhub.io" target="_blank" style="padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;text-decoration:none;display:inline-flex;align-items:center">Get Free Key at Finnhub ↗</a>
         </div>
-        <div style="margin-top:1.25rem;font-size:11px;color:var(--dim);line-height:1.7">Alpha Vantage free keys allow 25 requests/day and 5/minute.<br>Registration is free at alphavantage.co — no credit card required.</div>
+        <div style="margin-top:1.25rem;font-size:11px;color:var(--dim);line-height:1.7">
+          Finnhub free tier: 60 API calls/minute, no daily limit.<br>
+          Registration is free at finnhub.io — no credit card required.
+        </div>
       </div>`;
   }
 }
 
-function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+/* ── Render the modal content ── */
+function renderStockModal(q, p, m, history, income, ticker){
+  const met   = m?.metric || {};
+  const price = q.c || 0;
+  const chg   = q.d || 0;
+  const chgPct= q.dp || 0;
+  const open  = q.o || 0;
+  const hi    = q.h || 0;
+  const lo    = q.l || 0;
+  const prev  = q.pc || 0;
 
-function fmtB(v){if(!v||isNaN(v))return'—';const a=Math.abs(v);if(a>=1e12)return(v/1e12).toFixed(2)+'T';if(a>=1e9)return(v/1e9).toFixed(1)+'B';if(a>=1e6)return(v/1e6).toFixed(0)+'M';return Number(v).toLocaleString();}
-function fmtDollar(v){return(v!=null&&!isNaN(v)&&v!==''&&v!=='None')?'$'+fmtB(Number(v)):'—';}
-function fmtNum(v,d=2){return(v!=null&&!isNaN(v)&&v!==''&&v!=='None')?Number(v).toFixed(d):'—';}
+  const mktCapM  = p?.marketCapitalization;   // Finnhub returns market cap in millions
+  const mktCap   = mktCapM ? mktCapM * 1e6 : null;
+  const currency = p?.currency || 'USD';
+  const exch     = p?.exchange || '—';
+  const industry = p?.finnhubIndustry || '—';
+  const webUrl   = p?.weburl || '';
 
-function renderStockModal(ov, q, history, income, ticker){
-  // AV GLOBAL_QUOTE fields
-  const price   = parseFloat(q['05. price'])||0;
-  const chg     = parseFloat(q['09. change'])||0;
-  const chgPct  = parseFloat((q['10. change percent']||'0').replace('%',''))||0;
-  const open    = parseFloat(q['02. open'])||0;
-  const hi      = parseFloat(q['03. high'])||0;
-  const lo      = parseFloat(q['04. low'])||0;
-  const prevCls = parseFloat(q['08. previous close'])||0;
-  const vol     = parseInt(q['06. volume'])||0;
+  // Key metrics from /stock/metric
+  const pe       = met.peBasicExclExtraTTM;
+  const eps      = met.epsBasicExclExtraAnnual;
+  const hi52     = met['52WeekHigh'];
+  const lo52     = met['52WeekLow'];
+  const beta     = met.beta;
+  const divYield = met.dividendYieldIndicatedAnnual;
+  const revTTM   = met.revenuePerShareTTM && p?.shareOutstanding ? met.revenuePerShareTTM * p.shareOutstanding * 1e6 : null;
+  const netMargin= met.netProfitMarginTTM;
+  const roeTTM   = met.roeTTM;
+  const debtEq   = met.totalDebt_totalEquityAnnual;
 
-  // AV OVERVIEW fields
-  const mktCap   = ov.MarketCapitalization;
-  const entVal   = ov.EVToRevenue;   // EV/Revenue ratio (AV doesn't provide raw EV on free)
-  const pe       = ov.PERatio;
-  const fwdPE    = ov.ForwardPE;
-  const eps      = ov.EPS;
-  const hi52     = ov['52WeekHigh'];
-  const lo52     = ov['52WeekLow'];
-  const divYield = ov.DividendYield;
-  const beta     = ov.Beta;
-  const sector   = ov.Sector||'—';
-  const industry = ov.Industry||'';
-  const shares   = ov.SharesOutstanding;
-  const revTTM   = ov.RevenueTTM;
-  const ebitda   = ov.EBITDA;
-  const netInc   = ov.NetIncomeTTM||ov.ProfitMargin;
-  const exch     = ov.Exchange||'—';
+  const chgSign  = chg >= 0 ? '+' : '';
+  const chgClass = chg > 0 ? 'pos' : chg < 0 ? 'neg' : '';
 
-  const chgSign  = chg>=0?'+':'';
-  const chgClass = chg>0?'pos':chg<0?'neg':'';
-
-  // Quarterly income table
-  let qHTML='';
-  if(income.length>0){
-    qHTML=`
+  // Quarterly income table — use financials-reported data
+  const qReports = income?.data?.slice(0, 8) || [];
+  let qHTML = '';
+  if(qReports.length > 0){
+    qHTML = `
     <div class="chart-section">
       <div class="chart-section-title">Quarterly Financials — Last 8 Quarters</div>
       <div class="qtable-wrap"><table class="qtable">
-        <thead><tr><th>Quarter End</th><th>Revenue</th><th>Gross Profit</th><th>EBITDA</th><th>Net Income</th></tr></thead>
-        <tbody>${[...income].reverse().map(r=>{
-          const ni=parseFloat(r.netIncome);
-          return`<tr>
-            <td>${r.fiscalDateEnding||''}</td>
-            <td>${fmtDollar(r.totalRevenue)}</td>
-            <td>${fmtDollar(r.grossProfit)}</td>
-            <td>${fmtDollar(r.ebitda)}</td>
-            <td class="${ni>0?'v-pos':ni<0?'v-neg':''}">${fmtDollar(r.netIncome)}</td>
+        <thead><tr>
+          <th>Quarter</th><th>Revenue</th><th>Gross Profit</th><th>Operating Income</th><th>Net Income</th>
+        </tr></thead>
+        <tbody>${[...qReports].reverse().map(r => {
+          const ic = r.report?.ic || [];
+          const getVal = label => { const row = ic.find(x => x.label === label || x.concept === label); return row ? Number(row.value) : null; };
+          const rev  = getVal('Revenue') || getVal('Revenues') || getVal('SalesRevenueNet');
+          const gp   = getVal('GrossProfit');
+          const oi   = getVal('OperatingIncomeLoss');
+          const ni   = getVal('NetIncomeLoss') || getVal('NetIncome');
+          const niClass = ni > 0 ? 'v-pos' : ni < 0 ? 'v-neg' : '';
+          return `<tr>
+            <td>${r.year || ''} Q${r.quarter || ''}</td>
+            <td>${fmtDollar(rev)}</td>
+            <td>${fmtDollar(gp)}</td>
+            <td>${fmtDollar(oi)}</td>
+            <td class="${niClass}">${fmtDollar(ni)}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>
     </div>`;
   }
 
-  document.getElementById('sModalBody').innerHTML=`
+  document.getElementById('sModalBody').innerHTML = `
     <div class="kstats">
-      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val acc">$${fmtNum(price,2)}</div><div class="kstat-sub ${chgClass}">${chgSign}$${fmtNum(Math.abs(chg),2)} (${chgSign}${fmtNum(Math.abs(chgPct),2)}%) today</div></div>
-      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmtDollar(mktCap)}</div><div class="kstat-sub">${shares&&shares!='None'?fmtB(Number(shares))+' shares':''}</div></div>
-      <div class="kstat"><div class="kstat-label">Revenue (TTM)</div><div class="kstat-val">${fmtDollar(revTTM)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">EBITDA (TTM)</div><div class="kstat-val">${fmtDollar(ebitda)}</div><div class="kstat-sub">Trailing 12mo</div></div>
-      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo52,2)} – $${fmtNum(hi52,2)}</div><div class="kstat-sub">USD</div></div>
-      <div class="kstat"><div class="kstat-label">P/E Ratio</div><div class="kstat-val">${pe&&pe!='None'?fmtNum(pe,1):'—'}</div><div class="kstat-sub">Trailing TTM</div></div>
-      <div class="kstat"><div class="kstat-label">Forward P/E</div><div class="kstat-val">${fwdPE&&fwdPE!='None'?fmtNum(fwdPE,1):'—'}</div><div class="kstat-sub">Forward est.</div></div>
-      <div class="kstat"><div class="kstat-label">EPS (TTM)</div><div class="kstat-val">${eps&&eps!='None'?'$'+fmtNum(eps,2):'—'}</div><div class="kstat-sub">Earnings / share</div></div>
-      <div class="kstat"><div class="kstat-label">Div. Yield</div><div class="kstat-val">${divYield&&divYield!='None'?(parseFloat(divYield)*100).toFixed(2)+'%':'—'}</div><div class="kstat-sub">Annual</div></div>
-      <div class="kstat"><div class="kstat-label">Beta (5yr)</div><div class="kstat-val">${beta&&beta!='None'?fmtNum(beta,2):'—'}</div><div class="kstat-sub">vs S&P 500</div></div>
-      <div class="kstat"><div class="kstat-label">Exchange</div><div class="kstat-val" style="font-size:14px">${exch}</div><div class="kstat-sub">${sector}</div></div>
-      <div class="kstat"><div class="kstat-label">Day Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo,2)} – $${fmtNum(hi,2)}</div><div class="kstat-sub">Open: $${fmtNum(open,2)}</div></div>
+      <div class="kstat"><div class="kstat-label">Price</div><div class="kstat-val acc">$${fmtNum(price, 2)}</div><div class="kstat-sub ${chgClass}">${chgSign}$${fmtNum(Math.abs(chg), 2)} (${chgSign}${fmtNum(Math.abs(chgPct), 2)}%) today</div></div>
+      <div class="kstat"><div class="kstat-label">Market Cap</div><div class="kstat-val">${fmtDollar(mktCap)}</div><div class="kstat-sub">${currency}</div></div>
+      <div class="kstat"><div class="kstat-label">52-Wk Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo52, 2)} – $${fmtNum(hi52, 2)}</div><div class="kstat-sub">${currency}</div></div>
+      <div class="kstat"><div class="kstat-label">P/E Ratio (TTM)</div><div class="kstat-val">${fmtNum(pe, 1)}</div><div class="kstat-sub">Trailing</div></div>
+      <div class="kstat"><div class="kstat-label">EPS (Annual)</div><div class="kstat-val">${eps != null ? '$' + fmtNum(eps, 2) : '—'}</div><div class="kstat-sub">Basic excl. extra</div></div>
+      <div class="kstat"><div class="kstat-label">Div. Yield</div><div class="kstat-val">${divYield != null ? fmtNum(divYield * 100, 2) + '%' : '—'}</div><div class="kstat-sub">Indicated annual</div></div>
+      <div class="kstat"><div class="kstat-label">Beta (5yr)</div><div class="kstat-val">${fmtNum(beta, 2)}</div><div class="kstat-sub">vs S&P 500</div></div>
+      <div class="kstat"><div class="kstat-label">Net Margin (TTM)</div><div class="kstat-val">${netMargin != null ? fmtNum(netMargin, 1) + '%' : '—'}</div><div class="kstat-sub">Trailing 12mo</div></div>
+      <div class="kstat"><div class="kstat-label">ROE (TTM)</div><div class="kstat-val">${roeTTM != null ? fmtNum(roeTTM, 1) + '%' : '—'}</div><div class="kstat-sub">Return on equity</div></div>
+      <div class="kstat"><div class="kstat-label">Day Range</div><div class="kstat-val" style="font-size:13px">$${fmtNum(lo, 2)} – $${fmtNum(hi, 2)}</div><div class="kstat-sub">Open: $${fmtNum(open, 2)}</div></div>
+      <div class="kstat"><div class="kstat-label">Prev Close</div><div class="kstat-val">$${fmtNum(prev, 2)}</div><div class="kstat-sub">${exch}</div></div>
+      <div class="kstat"><div class="kstat-label">Industry</div><div class="kstat-val" style="font-size:12px">${industry}</div><div class="kstat-sub">${webUrl ? '<a href="' + webUrl + '" target="_blank" style="color:#a8bce8;text-decoration:none">Website ↗</a>' : ''}</div></div>
     </div>
 
     <div class="chart-section">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-        <div class="chart-section-title">Stock Price — Historical Chart</div>
+        <div class="chart-section-title">Stock Price — 3 Year Weekly History</div>
         <div class="period-btns">
           <button class="period-btn" onclick="setPeriod(this,1)">1yr</button>
           <button class="period-btn" onclick="setPeriod(this,2)">2yr</button>
@@ -636,7 +661,7 @@ function renderStockModal(ov, q, history, income, ticker){
     ${qHTML}
 
     <div class="smodal-disclaimer">
-      Data provided by <a href="https://www.alphavantage.co" target="_blank" style="color:#a8bce8;text-decoration:none">Alpha Vantage</a> (NASDAQ licensed provider). End-of-day prices. Free tier: 25 requests/day — results are cached per session to conserve quota. Not investment advice.
+      Real-time data provided by <a href="https://finnhub.io" target="_blank" style="color:#a8bce8;text-decoration:none">Finnhub</a> (60 req/min free tier). Results cached per session. Prices in ${currency} unless stated. Not investment advice.
       <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#a8bce8;margin-left:8px;text-decoration:none">View on Yahoo Finance ↗</a>
     </div>`;
 
@@ -644,37 +669,37 @@ function renderStockModal(ov, q, history, income, ticker){
 }
 
 function setPeriod(btn, years){
-  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   drawStockChart(priceHistory, years);
 }
 
 function drawStockChart(history, years){
-  if(stockChartInst){stockChartInst.destroy();stockChartInst=null;}
-  const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-years);
-  const filtered=history.filter(d=>new Date(d.date)>=cutoff);
-  if(!filtered.length)return;
-  const labels=filtered.map(d=>{const dt=new Date(d.date);return dt.toLocaleDateString('en-US',{month:'short',year:'2-digit'});});
-  const data=filtered.map(d=>d.close);
-  const up=data[data.length-1]>=data[0];
-  const lineColor=up?'#7eb8a4':'#e07070';
-  const ctx=document.getElementById('stockChart').getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,200);
-  grad.addColorStop(0,up?'rgba(126,184,164,0.2)':'rgba(224,112,112,0.2)');
-  grad.addColorStop(1,'rgba(0,0,0,0)');
-  stockChartInst=new Chart(ctx,{
-    type:'line',
-    data:{labels,datasets:[{data,borderColor:lineColor,backgroundColor:grad,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:lineColor,fill:true,tension:0.2}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{backgroundColor:'rgba(26,30,41,0.96)',titleColor:'#e8eaf0',bodyColor:'#e8eaf0',borderColor:'rgba(255,255,255,0.13)',borderWidth:1,padding:10,callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}}
+  if(stockChartInst){ stockChartInst.destroy(); stockChartInst = null; }
+  const cutoff = Date.now()/1000 - years * 365.25 * 24 * 3600;
+  const filtered = history.filter(d => d.date >= cutoff);
+  if(!filtered.length) return;
+  const labels = filtered.map(d => fmtDate(d.date));
+  const data   = filtered.map(d => d.close);
+  const up     = data[data.length - 1] >= data[0];
+  const lineColor = up ? '#7eb8a4' : '#e07070';
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 200);
+  grad.addColorStop(0, up ? 'rgba(126,184,164,0.2)' : 'rgba(224,112,112,0.2)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  stockChartInst = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: lineColor, backgroundColor: grad, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: lineColor, fill: true, tension: 0.2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: 'rgba(26,30,41,0.96)', titleColor: '#e8eaf0', bodyColor: '#e8eaf0', borderColor: 'rgba(255,255,255,0.13)', borderWidth: 1, padding: 10, callbacks: { label: c => '$' + c.parsed.y.toFixed(2) } }
       },
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#9aa0b0',font:{size:10},maxTicksLimit:8}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#9aa0b0',font:{size:10},callback:v=>'$'+v.toFixed(0)},position:'right'}
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0b0', font: { size: 10 }, maxTicksLimit: 8 } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9aa0b0', font: { size: 10 }, callback: v => '$' + v.toFixed(0) }, position: 'right' }
       }
     }
   });
