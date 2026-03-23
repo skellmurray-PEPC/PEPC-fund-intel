@@ -524,29 +524,29 @@ async function fetchFinnhubData(ticker, name){
       return;
     }
 
-    // Fetch all four endpoints in parallel — Finnhub allows 60 req/min so this is fine
+    // Fetch all four free-tier endpoints in parallel — Finnhub allows 60 req/min
     const threeYrsAgo = yearsAgoTs(3);
     const now         = nowTs();
 
-    const [quote, profile, metrics, candles, income] = await Promise.all([
-      fhFetch('/quote',              { symbol: ticker }),
-      fhFetch('/stock/profile2',     { symbol: ticker }),
-      fhFetch('/stock/metric',       { symbol: ticker, metric: 'all' }),
-      fhFetch('/stock/candle',       { symbol: ticker, resolution: 'W', from: threeYrsAgo, to: now }),
-      fhFetch('/stock/financials-reported', { symbol: ticker, freq: 'quarterly' })
+    const [quote, profile, metrics, candles, earnings] = await Promise.all([
+      fhFetch('/quote',          { symbol: ticker }),
+      fhFetch('/stock/profile2', { symbol: ticker }),
+      fhFetch('/stock/metric',   { symbol: ticker, metric: 'all' }),
+      fhFetch('/stock/candle',   { symbol: ticker, resolution: 'W', from: threeYrsAgo, to: now }),
+      fhFetch('/stock/earnings', { symbol: ticker, limit: 8 })
     ]);
 
     if(!quote || quote.c == null) throw new Error('No data returned for ' + ticker + '. Ticker may not be supported on the free tier.');
 
-    // Build sorted price history from candle data
+    // Build sorted price history from weekly candle data
     const history = (candles.s === 'ok' && candles.t)
       ? candles.t.map((ts, i) => ({ date: ts, close: candles.c[i] })).sort((a, b) => a.date - b.date)
       : [];
 
     priceHistory = history;
-    fhCache[ticker] = { quote, profile, metrics, priceHistory: history, income };
+    fhCache[ticker] = { quote, profile, metrics, priceHistory: history, earnings };
 
-    renderStockModal(quote, profile, metrics, history, income, ticker);
+    renderStockModal(quote, profile, metrics, history, earnings, ticker);
 
   } catch(err){
     document.getElementById('sModalBody').innerHTML = `
@@ -567,7 +567,7 @@ async function fetchFinnhubData(ticker, name){
 }
 
 /* ── Render the modal content ── */
-function renderStockModal(q, p, m, history, income, ticker){
+function renderStockModal(q, p, m, history, earnings, ticker){
   const met   = m?.metric || {};
   const price = q.c || 0;
   const chg   = q.d || 0;
@@ -599,34 +599,35 @@ function renderStockModal(q, p, m, history, income, ticker){
   const chgSign  = chg >= 0 ? '+' : '';
   const chgClass = chg > 0 ? 'pos' : chg < 0 ? 'neg' : '';
 
-  // Quarterly income table — use financials-reported data
-  const qReports = income?.data?.slice(0, 8) || [];
+  // Quarterly earnings table — uses /stock/earnings (free tier)
+  // Returns: period, actual EPS, estimated EPS, surprise, surprisePercent
+  const qEarnings = Array.isArray(earnings) ? earnings.slice(0, 8) : [];
   let qHTML = '';
-  if(qReports.length > 0){
+  if(qEarnings.length > 0){
     qHTML = `
     <div class="chart-section">
-      <div class="chart-section-title">Quarterly Financials — Last 8 Quarters</div>
+      <div class="chart-section-title">Quarterly EPS — Last 8 Quarters</div>
       <div class="qtable-wrap"><table class="qtable">
         <thead><tr>
-          <th>Quarter</th><th>Revenue</th><th>Gross Profit</th><th>Operating Income</th><th>Net Income</th>
+          <th>Period</th><th>Actual EPS</th><th>Est. EPS</th><th>Surprise</th><th>Surprise %</th>
         </tr></thead>
-        <tbody>${[...qReports].reverse().map(r => {
-          const ic = r.report?.ic || [];
-          const getVal = label => { const row = ic.find(x => x.label === label || x.concept === label); return row ? Number(row.value) : null; };
-          const rev  = getVal('Revenue') || getVal('Revenues') || getVal('SalesRevenueNet');
-          const gp   = getVal('GrossProfit');
-          const oi   = getVal('OperatingIncomeLoss');
-          const ni   = getVal('NetIncomeLoss') || getVal('NetIncome');
-          const niClass = ni > 0 ? 'v-pos' : ni < 0 ? 'v-neg' : '';
+        <tbody>${[...qEarnings].map(r => {
+          const actual = r.actual;
+          const est    = r.estimate;
+          const surp   = r.surprise;
+          const surpP  = r.surprisePercent;
+          const surpriseClass = surp > 0 ? 'v-pos' : surp < 0 ? 'v-neg' : '';
+          const sign   = surp > 0 ? '+' : '';
           return `<tr>
-            <td>${r.year || ''} Q${r.quarter || ''}</td>
-            <td>${fmtDollar(rev)}</td>
-            <td>${fmtDollar(gp)}</td>
-            <td>${fmtDollar(oi)}</td>
-            <td class="${niClass}">${fmtDollar(ni)}</td>
+            <td>${r.period || '—'}</td>
+            <td>${actual != null ? '$' + fmtNum(actual, 2) : '—'}</td>
+            <td>${est    != null ? '$' + fmtNum(est, 2)    : '—'}</td>
+            <td class="${surpriseClass}">${surp != null ? sign + '$' + fmtNum(Math.abs(surp), 2) : '—'}</td>
+            <td class="${surpriseClass}">${surpP != null ? sign + fmtNum(surpP, 1) + '%' : '—'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>
+      <p style="font-size:11px;color:var(--dim);margin-top:6px">EPS Surprise = Actual minus Estimate. Green = beat, red = miss. Source: Finnhub /stock/earnings.</p>
     </div>`;
   }
 
